@@ -19,6 +19,7 @@ type Options struct {
 	MermaidWidth string  // Diagram image width: "auto", "100%", "80", "800px" (default: "auto")
 	MermaidBg    string  // Diagram image background: "auto", "dark", "light", "transparent", or "#RRGGBB" (default: "auto")
 	MermaidScale float64 // Rasterization scale factor for Mermaid images (default: 2.0 for Retina/HiDPI)
+	ConfigFile   string  // Path to loaded config file (e.g. ~/.mdeerc), or empty if none loaded
 }
 
 // DefaultOptions returns standard SRE defaults.
@@ -41,5 +42,6 @@ func DefaultOptions() Options {
 		MermaidWidth: "auto",
 		MermaidBg:    "auto",
 		MermaidScale: 2.0,
+		ConfigFile:   "",
 	}
 }

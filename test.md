@@ -327,4 +327,18 @@ Run these commands in your terminal to verify various viewer capabilities:
 
 # 12. Test broken pipe handling
 cat test.md | ./bin/mdee --plain | head -n 25
+
+# 13. Test configuration file loading and custom flag overrides
+./bin/mdee -c .mdeerc.example test.md
+./bin/mdee -c .mdeerc.example --theme monokai test.md
+
+# 14. Run terminal diagnostics showing config file status
+./bin/mdee doctor
+./bin/mdee doctor --config .mdeerc.example
+
+# 15. Preview default ~/.mdeerc configuration template
+./bin/mdee init --stdout
+
+# 16. Generate default configuration file to custom path
+./bin/mdee init --output /tmp/.mdeerc.test --force
 ```

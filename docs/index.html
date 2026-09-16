@@ -299,6 +299,13 @@
                   Use <code>--plain</code> to strip all ANSI escape sequences, borders, and colors for seamless parsing in automated bash/awk pipelines.
                 </p>
               </div>
+              <div>
+                <div class="card-icon">⚙️</div>
+                <h3>Persistent Config (~/.mdeerc)</h3>
+                <p>
+                  Auto-loads <code>~/.mdeerc</code> in YAML or JSON, point to custom configs with <code>-c</code>, or run <code>mdee init</code> to generate one.
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -437,6 +444,12 @@
             </thead>
             <tbody>
               <tr>
+                <td><span class="code-badge">--config</span></td>
+                <td><span class="code-badge">-c</span></td>
+                <td><code>""</code></td>
+                <td>Custom config file path (auto-loads <code>~/.mdeerc</code> if present)</td>
+              </tr>
+              <tr>
                 <td><span class="code-badge">--width</span></td>
                 <td><span class="code-badge">-w</span></td>
                 <td><code>0</code> (auto-detect)</td>
@@ -531,6 +544,12 @@
                 <td>—</td>
                 <td><code>false</code></td>
                 <td>Emit SRE diagnostic log traces to stderr</td>
+              </tr>
+              <tr>
+                <td><span class="code-badge">--init-config</span></td>
+                <td>—</td>
+                <td><code>false</code></td>
+                <td>Generate default <code>~/.mdeerc</code> configuration file and exit</td>
               </tr>
             </tbody>
           </table>

@@ -49,8 +49,12 @@ func handleBrokenPipe() {
 
 func newRootCmd() *cobra.Command {
 	opts := config.DefaultOptions()
-	var noPager bool
-	var noHyperlinks bool
+	var (
+		noPager      bool
+		noHyperlinks bool
+		configFile   string
+		initConfig   bool
+	)
 
 	cmd := &cobra.Command{
 		Use:     "mdee [flags] [file | URL ...]",
@@ -62,14 +66,102 @@ it delivers accurate inline graphics using iTerm2 OSC 1337 and Kitty protocols,
 graphical Mermaid diagram rendering with automated ANSI/ASCII fallback,
 word-wrapped and auto-aligned tables with Unicode box borders, syntax-highlighted
 code blocks, and OSC 8 clickable hyperlinks.`,
-		SilenceUsage: true,
-		Args:         cobra.ArbitraryArgs,
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		Args:          cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if noPager {
+			flags := cmd.Flags()
+
+			// Fast path: generate default configuration file if --init-config requested
+			if initConfig {
+				target := configFile
+				if target == "" {
+					target = config.DefaultConfigFile()
+				}
+				if target == "" {
+					return errors.New("unable to determine user home directory for ~/.mdeerc; specify --config <path>")
+				}
+				path, err := config.WriteDefaultConfigFile(target, false)
+				if err != nil {
+					return err
+				}
+				fmt.Fprintf(cmd.OutOrStdout(), "Created default configuration file: %s\n", path)
+				return nil
+			}
+
+			// Load configuration file (~/.mdeerc or custom --config)
+			cfgPath := configFile
+			explicitConfig := flags.Changed("config")
+			if cfgPath == "" {
+				cfgPath = config.DefaultConfigFile()
+			}
+
+			fileOpts, loaded, err := config.LoadConfigFile(cfgPath, explicitConfig)
+			if err != nil {
+				return err
+			}
+
+			if loaded {
+				if !flags.Changed("width") {
+					opts.Width = fileOpts.Width
+				}
+				if !flags.Changed("theme") {
+					opts.Theme = fileOpts.Theme
+				}
+				if !flags.Changed("table-style") {
+					opts.TableStyle = fileOpts.TableStyle
+				}
+				if !flags.Changed("images") {
+					opts.ImageMode = fileOpts.ImageMode
+				}
+				if !flags.Changed("image-width") {
+					opts.ImageWidth = fileOpts.ImageWidth
+				}
+				if !flags.Changed("image-height") {
+					opts.ImageHeight = fileOpts.ImageHeight
+				}
+				if !flags.Changed("mermaid") && !flags.Changed("mermaid-mode") {
+					opts.MermaidMode = fileOpts.MermaidMode
+				}
+				if !flags.Changed("mermaid-theme") {
+					opts.MermaidTheme = fileOpts.MermaidTheme
+				}
+				if !flags.Changed("mermaid-width") {
+					opts.MermaidWidth = fileOpts.MermaidWidth
+				}
+				if !flags.Changed("mermaid-bg") && !flags.Changed("mermaid-background") {
+					opts.MermaidBg = fileOpts.MermaidBg
+				}
+				if !flags.Changed("mermaid-scale") {
+					opts.MermaidScale = fileOpts.MermaidScale
+				}
+				if !flags.Changed("line-numbers") {
+					opts.LineNumbers = fileOpts.LineNumbers
+				}
+				if !flags.Changed("hyperlinks") && !flags.Changed("no-hyperlinks") {
+					opts.Hyperlinks = fileOpts.Hyperlinks
+				}
+				if !flags.Changed("pager") && !flags.Changed("no-pager") {
+					opts.Pager = fileOpts.Pager
+				}
+				if !flags.Changed("plain") {
+					opts.Plain = fileOpts.Plain
+				}
+				if !flags.Changed("debug") {
+					opts.Debug = fileOpts.Debug
+				}
+				opts.ConfigFile = fileOpts.ConfigFile
+			}
+
+			if flags.Changed("no-pager") {
 				opts.Pager = false
 			}
-			if noHyperlinks {
+			if flags.Changed("no-hyperlinks") {
 				opts.Hyperlinks = false
+			}
+
+			if opts.Debug && opts.ConfigFile != "" {
+				fmt.Fprintf(os.Stderr, "[DEBUG] Configuration loaded from: %s\n", opts.ConfigFile)
 			}
 
 			switch strings.ToLower(strings.TrimSpace(opts.MermaidMode)) {
@@ -87,6 +179,7 @@ code blocks, and OSC 8 clickable hyperlinks.`,
 	}
 
 	flags := cmd.Flags()
+	flags.StringVarP(&configFile, "config", "c", "", "Path to configuration file (default: ~/.mdeerc)")
 	flags.IntVarP(&opts.Width, "width", "w", 0, "Explicit terminal width in columns (0 = auto-detect)")
 	flags.StringVarP(&opts.Theme, "theme", "t", "dark", "Theme: dark, light, dracula, monokai, solarized-dark, solarized-light, plain")
 	flags.StringVarP(&opts.TableStyle, "table-style", "s", "rounded", "Table border style: rounded, box, double, ascii, markdown, minimal")
@@ -107,22 +200,73 @@ code blocks, and OSC 8 clickable hyperlinks.`,
 	flags.BoolVar(&noPager, "no-pager", false, "Disable pager output")
 	flags.BoolVar(&opts.Plain, "plain", false, "Output plain text without ANSI escape sequences or colors")
 	flags.BoolVar(&opts.Debug, "debug", false, "Print debug diagnostic logs to stderr")
+	flags.BoolVar(&initConfig, "init-config", false, "Generate default ~/.mdeerc configuration file and exit")
 
 	cmd.AddCommand(newDoctorCmd())
 	cmd.AddCommand(newVersionCmd())
+	cmd.AddCommand(newInitCmd())
+
+	return cmd
+}
+
+func newInitCmd() *cobra.Command {
+	var (
+		force       bool
+		output      string
+		printStdout bool
+	)
+
+	cmd := &cobra.Command{
+		Use:     "init",
+		Aliases: []string{"init-config", "config-init"},
+		Short:   "Generate a default ~/.mdeerc configuration file",
+		Long: `Generate a default configuration file with recommended settings and detailed comments.
+By default, writes to ~/.mdeerc. If ~/.mdeerc already exists, use --force to overwrite it.
+Use --stdout to print the configuration template to the terminal instead of writing to disk.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if printStdout {
+				_, err := fmt.Fprint(cmd.OutOrStdout(), config.DefaultConfigTemplate())
+				return err
+			}
+
+			target := output
+			if target == "" {
+				target = config.DefaultConfigFile()
+			}
+			if target == "" {
+				return errors.New("unable to determine user home directory for ~/.mdeerc; specify --output <path>")
+			}
+
+			path, err := config.WriteDefaultConfigFile(target, force)
+			if err != nil {
+				return err
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Created default configuration file: %s\n", path)
+			return nil
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.BoolVarP(&force, "force", "f", false, "Overwrite existing configuration file if it exists")
+	flags.StringVarP(&output, "output", "o", "", "Destination file path (default: ~/.mdeerc)")
+	flags.BoolVar(&printStdout, "stdout", false, "Print default configuration to stdout instead of writing to file")
 
 	return cmd
 }
 
 func newDoctorCmd() *cobra.Command {
-	return &cobra.Command{
+	var configFile string
+	cmd := &cobra.Command{
 		Use:   "doctor",
-		Short: "Diagnose terminal environment, iTerm2 detection, and protocol support",
+		Short: "Diagnose terminal environment, iTerm2 detection, protocol support, and configuration",
 		Run: func(cmd *cobra.Command, args []string) {
-			report := doctor.RunDiagnostics()
+			report := doctor.RunDiagnostics(configFile)
 			fmt.Print(report)
 		},
 	}
+	cmd.Flags().StringVarP(&configFile, "config", "c", "", "Path to configuration file (default: ~/.mdeerc)")
+	return cmd
 }
 
 func newVersionCmd() *cobra.Command {

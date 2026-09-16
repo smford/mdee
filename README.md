@@ -62,6 +62,12 @@ Designed through a Senior Site Reliability Engineering lens, `mdee` solves commo
 - **Plain Mode for Scripting**: Use `--plain` to strip all ANSI codes and borders, outputting clean plain text suitable for `grep`, `awk`, or saving to log files.
 - **Built-in Diagnostics (`mdee doctor`)**: Inspect terminal capabilities, iTerm2 detection, truecolor, and inline graphic protocols in one command.
 
+### 7. Persistent Configuration (`~/.mdeerc`)
+- **Automatic Discovery**: Automatically loads user preferences from `~/.mdeerc` in your home directory if present. If absent, proceeds silently with standard compiled defaults.
+- **YAML & JSON Support**: Configure your preferred theme, borders, Mermaid modes, or image behavior using clean YAML or JSON format.
+- **Hierarchical Precedence**: Deterministic precedence guarantees CLI flags override `~/.mdeerc` settings, which override compiled defaults.
+- **Custom Config File**: Specify custom configuration files on demand with `-c, --config <path>`.
+
 ---
 
 ## Installation
@@ -148,6 +154,12 @@ mdee --mermaid-width 80 --mermaid-bg "#1e1e2e" test.md
 
 # View Mermaid image with clean white canvas card
 mdee --mermaid-bg white test.md
+
+# Load preferences from an explicit configuration file
+mdee --config ~/.config/mdee/dark.yaml report.md
+
+# Override configuration file preferences with CLI flags
+mdee -c ~/.mdeerc --theme dracula report.md
 ```
 
 ---
@@ -156,6 +168,7 @@ mdee --mermaid-bg white test.md
 
 | Flag | Shorthand | Default | Description |
 | :--- | :---: | :---: | :--- |
+| `--config` | `-c` | `""` | Path to configuration file (defaults to `~/.mdeerc` if present) |
 | `--width` | `-w` | `0` | Explicit terminal width in columns (`0` = auto-detect) |
 | `--theme` | `-t` | `"dark"` | Color theme: `dark`, `light`, `dracula`, `monokai`, `solarized-dark`, `solarized-light`, `plain` |
 | `--table-style` | `-s` | `"rounded"` | Border style: `rounded`, `box`, `double`, `ascii`, `markdown`, `minimal` |
@@ -174,10 +187,96 @@ mdee --mermaid-bg white test.md
 | `--no-pager`    | | `false` | Disable pager output |
 | `--plain`       | | `false` | Output plain text without ANSI escape sequences |
 | `--debug`       | | `false` | Print diagnostic debug logs to stderr |
+| `--init-config` | | `false` | Generate default `~/.mdeerc` configuration file and exit |
+
+---
+
+## Configuration File (`~/.mdeerc`)
+
+`mdee` automatically searches for a configuration file named `~/.mdeerc` in your home directory upon launch. If found, it establishes your default preferences across all commands. If `~/.mdeerc` does not exist, `mdee` proceeds silently with compiled defaults without requiring any setup.
+
+You can also point `mdee` to an explicit configuration file via `-c` / `--config`:
+
+```bash
+mdee -c ~/.config/mdee/work.yaml document.md
+mdee --config ./project.mdeerc.json document.md
+```
+
+### Precedence Hierarchy
+
+1. **CLI Flags** (e.g. `--theme dracula`, `--mermaid ansi`, `-w 80`) &mdash; highest priority, overrides configuration file and defaults.
+2. **Configuration File** (`~/.mdeerc` or path supplied via `-c, --config`).
+3. **Compiled Defaults** &mdash; baseline fallback.
+
+### Supported Syntax & Formats
+
+Both **YAML** and **JSON** are supported. Configuration keys accept kebab-case (`table-style`) or snake_case (`table_style`), and can be expressed either as flat keys or organized into nested sections:
+
+```yaml
+# ~/.mdeerc (YAML example)
+theme: "dracula"
+table-style: "rounded"
+line-numbers: false
+hyperlinks: true
+pager: false
+
+# Nested image settings
+image:
+  mode: "auto"
+  width: "auto"
+  height: "auto"
+
+# Nested Mermaid settings (or scalar shortcut: mermaid: "unicode")
+mermaid:
+  mode: "auto"
+  theme: "dark"
+  width: "auto"
+  bg: "#1e1e2e"
+  scale: 2.0
+```
+
+A complete reference configuration is available at [`.mdeerc.example`](.mdeerc.example).
+
+### Generating a Default Configuration File
+
+To quickly generate a documented `~/.mdeerc` file pre-populated with standard defaults, run:
+
+```bash
+# Generate ~/.mdeerc with default values
+mdee init
+
+# Print template to stdout for previewing or piping
+mdee init --stdout
+
+# Write to a custom path
+mdee init --output ~/.config/mdee/mdeerc.yaml
+
+# Overwrite existing config file
+mdee init --force
+```
+
+Alternatively, use the `--init-config` flag on the root command:
+
+```bash
+mdee --init-config
+```
 
 ---
 
 ## Subcommands
+
+### `mdee init`
+Generates a fully documented default `~/.mdeerc` file to help you customize your settings:
+
+```bash
+$ mdee init
+Created default configuration file: /Users/username/.mdeerc
+```
+
+Flags:
+- `-f, --force`: Overwrite existing configuration file if it already exists.
+- `-o, --output <path>`: Destination path (defaults to `~/.mdeerc`).
+- `--stdout`: Output configuration template to standard output instead of writing to disk.
 
 ### `mdee doctor`
 Diagnoses your current terminal environment and verifies protocol support:
@@ -206,6 +305,7 @@ $ mdee doctor
 │ Mermaid Protocol         │ iterm2            │ iTerm2 Graphics (OSC 1337)│
 │ Mermaid CLI (mmdc)       │ false             │ Not Found (Remote / Fallback) │
 │ Mermaid Text Engine      │ mmaid-go          │ READY (Pure-Go)         │
+│ Config File (~/.mdeerc)  │ ~/.mdeerc         │ LOADED                  │
 ╰──────────────────────────┴───────────────────┴─────────────────────────╯
 
 ── Protocol Verification Test ──────────────────────────────────
@@ -249,7 +349,7 @@ If you run inside `tmux` within iTerm2, tmux blocks terminal escape sequences by
 │       ├── main.go          # CLI entrypoint, flag parsing, broken pipe handling
 │       └── main_test.go     # CLI command execution tests
 ├── internal/
-│   ├── config/              # Runtime configuration defaults and types
+│   ├── config/              # Runtime configuration, ~/.mdeerc loader, defaults, and types
 │   ├── doctor/              # SRE terminal diagnostics & capability probe
 │   ├── image/               # OSC 1337 encoder, fetcher, dimension parser
 │   ├── renderer/            # Goldmark AST terminal renderer & Mermaid engine
