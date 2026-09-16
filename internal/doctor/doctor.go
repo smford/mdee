@@ -13,13 +13,14 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	mermaid "github.com/smford/golang-mermaid"
+	"github.com/smford/mdee/internal/config"
 	imagePkg "github.com/smford/mdee/internal/image"
 	"github.com/smford/mdee/internal/table"
 	"github.com/smford/mdee/internal/term"
 )
 
 // RunDiagnostics generates a full SRE terminal health and capability report.
-func RunDiagnostics() string {
+func RunDiagnostics(configPath ...string) string {
 	info := term.Detect()
 
 	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("39"))
@@ -93,6 +94,30 @@ func RunDiagnostics() string {
 	}
 	envTable.AddRow("Mermaid CLI (mmdc)", fmt.Sprintf("%t", hasMmdc), mmdcStatus)
 	envTable.AddRow("Mermaid Text Engine", "mmaid-go", okStyle.Render("READY (Pure-Go)"))
+
+	// Config file check
+	cfgFile := config.DefaultConfigFile()
+	if len(configPath) > 0 && configPath[0] != "" {
+		cfgFile = configPath[0]
+	}
+	cfgDisplay := "~/.mdeerc"
+	if cfgFile != config.DefaultConfigFile() {
+		cfgDisplay = cfgFile
+	}
+	var cfgStatus string
+	if cfgFile != "" {
+		_, loaded, err := config.LoadConfigFile(cfgFile, false)
+		if err != nil {
+			cfgStatus = warnStyle.Render("SYNTAX ERROR")
+		} else if loaded {
+			cfgStatus = okStyle.Render("LOADED")
+		} else {
+			cfgStatus = infoStyle.Render("Not Found (Using defaults)")
+		}
+	} else {
+		cfgStatus = infoStyle.Render("Not Configured")
+	}
+	envTable.AddRow("Config File (~/.mdeerc)", cfgDisplay, cfgStatus)
 
 	sb.WriteString(envTable.Render())
 	sb.WriteString("\n\n")

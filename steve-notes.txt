@@ -54,3 +54,10 @@ You can test the application using any of the following commands in iTerm2:
 
   # 16. Run terminal diagnostic doctor check
   ./bin/mdee doctor
+
+  # 17. Test loading configuration from a custom config file
+  ./bin/mdee -c .mdeerc.example test.md
+  ./bin/mdee -c .mdeerc.example --theme monokai test.md
+
+  # 18. Inspect diagnostic doctor report with custom config
+  ./bin/mdee doctor --config .mdeerc.example

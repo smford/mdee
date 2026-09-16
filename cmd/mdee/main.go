@@ -49,8 +49,11 @@ func handleBrokenPipe() {
 
 func newRootCmd() *cobra.Command {
 	opts := config.DefaultOptions()
-	var noPager bool
-	var noHyperlinks bool
+	var (
+		noPager      bool
+		noHyperlinks bool
+		configFile   string
+	)
 
 	cmd := &cobra.Command{
 		Use:     "mdee [flags] [file | URL ...]",
@@ -65,11 +68,81 @@ code blocks, and OSC 8 clickable hyperlinks.`,
 		SilenceUsage: true,
 		Args:         cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if noPager {
+			flags := cmd.Flags()
+
+			// Load configuration file (~/.mdeerc or custom --config)
+			cfgPath := configFile
+			explicitConfig := flags.Changed("config")
+			if cfgPath == "" {
+				cfgPath = config.DefaultConfigFile()
+			}
+
+			fileOpts, loaded, err := config.LoadConfigFile(cfgPath, explicitConfig)
+			if err != nil {
+				return err
+			}
+
+			if loaded {
+				if !flags.Changed("width") {
+					opts.Width = fileOpts.Width
+				}
+				if !flags.Changed("theme") {
+					opts.Theme = fileOpts.Theme
+				}
+				if !flags.Changed("table-style") {
+					opts.TableStyle = fileOpts.TableStyle
+				}
+				if !flags.Changed("images") {
+					opts.ImageMode = fileOpts.ImageMode
+				}
+				if !flags.Changed("image-width") {
+					opts.ImageWidth = fileOpts.ImageWidth
+				}
+				if !flags.Changed("image-height") {
+					opts.ImageHeight = fileOpts.ImageHeight
+				}
+				if !flags.Changed("mermaid") && !flags.Changed("mermaid-mode") {
+					opts.MermaidMode = fileOpts.MermaidMode
+				}
+				if !flags.Changed("mermaid-theme") {
+					opts.MermaidTheme = fileOpts.MermaidTheme
+				}
+				if !flags.Changed("mermaid-width") {
+					opts.MermaidWidth = fileOpts.MermaidWidth
+				}
+				if !flags.Changed("mermaid-bg") && !flags.Changed("mermaid-background") {
+					opts.MermaidBg = fileOpts.MermaidBg
+				}
+				if !flags.Changed("mermaid-scale") {
+					opts.MermaidScale = fileOpts.MermaidScale
+				}
+				if !flags.Changed("line-numbers") {
+					opts.LineNumbers = fileOpts.LineNumbers
+				}
+				if !flags.Changed("hyperlinks") && !flags.Changed("no-hyperlinks") {
+					opts.Hyperlinks = fileOpts.Hyperlinks
+				}
+				if !flags.Changed("pager") && !flags.Changed("no-pager") {
+					opts.Pager = fileOpts.Pager
+				}
+				if !flags.Changed("plain") {
+					opts.Plain = fileOpts.Plain
+				}
+				if !flags.Changed("debug") {
+					opts.Debug = fileOpts.Debug
+				}
+				opts.ConfigFile = fileOpts.ConfigFile
+			}
+
+			if flags.Changed("no-pager") {
 				opts.Pager = false
 			}
-			if noHyperlinks {
+			if flags.Changed("no-hyperlinks") {
 				opts.Hyperlinks = false
+			}
+
+			if opts.Debug && opts.ConfigFile != "" {
+				fmt.Fprintf(os.Stderr, "[DEBUG] Configuration loaded from: %s\n", opts.ConfigFile)
 			}
 
 			switch strings.ToLower(strings.TrimSpace(opts.MermaidMode)) {
@@ -87,6 +160,7 @@ code blocks, and OSC 8 clickable hyperlinks.`,
 	}
 
 	flags := cmd.Flags()
+	flags.StringVarP(&configFile, "config", "c", "", "Path to configuration file (default: ~/.mdeerc)")
 	flags.IntVarP(&opts.Width, "width", "w", 0, "Explicit terminal width in columns (0 = auto-detect)")
 	flags.StringVarP(&opts.Theme, "theme", "t", "dark", "Theme: dark, light, dracula, monokai, solarized-dark, solarized-light, plain")
 	flags.StringVarP(&opts.TableStyle, "table-style", "s", "rounded", "Table border style: rounded, box, double, ascii, markdown, minimal")
@@ -115,14 +189,17 @@ code blocks, and OSC 8 clickable hyperlinks.`,
 }
 
 func newDoctorCmd() *cobra.Command {
-	return &cobra.Command{
+	var configFile string
+	cmd := &cobra.Command{
 		Use:   "doctor",
-		Short: "Diagnose terminal environment, iTerm2 detection, and protocol support",
+		Short: "Diagnose terminal environment, iTerm2 detection, protocol support, and configuration",
 		Run: func(cmd *cobra.Command, args []string) {
-			report := doctor.RunDiagnostics()
+			report := doctor.RunDiagnostics(configFile)
 			fmt.Print(report)
 		},
 	}
+	cmd.Flags().StringVarP(&configFile, "config", "c", "", "Path to configuration file (default: ~/.mdeerc)")
+	return cmd
 }
 
 func newVersionCmd() *cobra.Command {

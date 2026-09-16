@@ -1,0 +1,72 @@
+# ~/.mdeerc - Configuration file for mdee (Markdown Terminal Viewer)
+#
+# Place this file at ~/.mdeerc to configure personal default preferences.
+# You can also point to a custom config file using the -c, --config flag:
+#   mdee -c /path/to/custom-config.yaml document.md
+#
+# Precedence Order:
+#   1. Explicit CLI flags (e.g. -t dracula, --mermaid ansi)
+#   2. Configuration file (~/.mdeerc or -c <path>)
+#   3. Built-in defaults
+#
+# Both YAML and JSON formats are supported.
+# Both kebab-case (table-style) and snake_case (table_style) keys are supported.
+
+# Terminal rendering width in columns (0 = auto-detect terminal columns)
+width: 0
+
+# Color theme: dark, light, dracula, monokai, solarized-dark, solarized-light, plain
+theme: "dark"
+
+# Table border style: rounded, box, double, ascii, markdown, minimal
+table-style: "rounded"
+
+# Show line numbers in code blocks (true or false)
+line-numbers: false
+
+# Enable clickable terminal hyperlinks (OSC 8)
+hyperlinks: true
+
+# Route output longer than screen height through $PAGER (less -R -F -X)
+pager: false
+
+# Output plain text with no ANSI styling, escape codes, or borders
+plain: false
+
+# Print SRE diagnostic debug traces to stderr
+debug: false
+
+# -----------------------------------------------------------------------------
+# Image Options
+# -----------------------------------------------------------------------------
+# Can be specified as flat options:
+#   images: "auto"        # auto (iTerm2 only), always, never
+#   image-width: "auto"   # auto, 100%, 80, 400px
+#   image-height: "auto"  # auto, 20, 300px
+#
+# Or as a nested section:
+image:
+  mode: "auto"
+  width: "auto"
+  height: "auto"
+
+# -----------------------------------------------------------------------------
+# Mermaid Diagram Options
+# -----------------------------------------------------------------------------
+# Can be specified as a scalar shortcut:
+#   mermaid: "auto"       # auto, image, ansi, unicode, ascii, raw
+#
+# Or as flat options:
+#   mermaid-mode: "auto"
+#   mermaid-theme: "dark" # dark, default, slate, blueprint, neon, neutral, forest
+#   mermaid-width: "auto" # auto (smart cell fit), 100%, 80, 800px
+#   mermaid-bg: "auto"    # auto, dark, light, transparent, #RRGGBB
+#   mermaid-scale: 2.0    # 1.0 - 4.0 (HiDPI / Retina scale factor)
+#
+# Or as a nested section:
+mermaid:
+  mode: "auto"
+  theme: ""
+  width: "auto"
+  bg: "auto"
+  scale: 2.0

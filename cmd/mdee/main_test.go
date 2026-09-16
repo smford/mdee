@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -130,6 +132,72 @@ func TestCLIMermaidFlags(t *testing.T) {
 		cmdAlias.SetOut(&bufAlias)
 		if err := cmdAlias.Execute(); err != nil {
 			t.Errorf("expected mermaid-background alias to be accepted, got: %v", err)
+		}
+	})
+}
+
+func TestCLIConfigFile(t *testing.T) {
+	t.Run("explicit config file loads settings and can be overridden by flags", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		cfgPath := filepath.Join(tmpDir, ".mdeerc")
+		content := `
+theme: monokai
+table-style: box
+width: 75
+line-numbers: true
+mermaid:
+  mode: ascii
+`
+		if err := os.WriteFile(cfgPath, []byte(content), 0600); err != nil {
+			t.Fatalf("failed to write test config file: %v", err)
+		}
+
+		mdPath := filepath.Join(tmpDir, "test.md")
+		if err := os.WriteFile(mdPath, []byte("# Hello\n\nContent\n"), 0600); err != nil {
+			t.Fatalf("failed to write test markdown file: %v", err)
+		}
+
+		// Test executing with --config and overriding theme
+		cmd := newRootCmd()
+		cmd.SetArgs([]string{"--config", cfgPath, "--theme", "light", "--plain", mdPath})
+		var buf bytes.Buffer
+		cmd.SetOut(&buf)
+		if err := cmd.Execute(); err != nil {
+			t.Fatalf("expected successful execution with --config, got: %v", err)
+		}
+	})
+
+	t.Run("non-existent explicit config returns error", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		mdPath := filepath.Join(tmpDir, "dummy.md")
+		_ = os.WriteFile(mdPath, []byte("# Dummy\n"), 0600)
+		cmd := newRootCmd()
+		cmd.SetArgs([]string{"--config", "/nonexistent/path/.mdeerc", mdPath})
+		var buf bytes.Buffer
+		cmd.SetOut(&buf)
+		cmd.SetErr(&buf)
+		err := cmd.Execute()
+		if err == nil {
+			t.Errorf("expected error for non-existent config file")
+		}
+		if !strings.Contains(err.Error(), "config file not found") {
+			t.Errorf("expected 'config file not found' in error, got: %v", err)
+		}
+	})
+
+	t.Run("doctor with config file", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		cfgPath := filepath.Join(tmpDir, ".mdeerc")
+		if err := os.WriteFile(cfgPath, []byte("theme: dracula\n"), 0600); err != nil {
+			t.Fatalf("failed to write config file: %v", err)
+		}
+
+		cmd := newDoctorCmd()
+		cmd.SetArgs([]string{"--config", cfgPath})
+		var buf bytes.Buffer
+		cmd.SetOut(&buf)
+		if err := cmd.Execute(); err != nil {
+			t.Fatalf("expected doctor with --config to succeed, got: %v", err)
 		}
 	})
 }
