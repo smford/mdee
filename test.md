@@ -14,6 +14,7 @@ Welcome to the **`mdee`** test suite! This document is designed to thoroughly ex
 2. **Inline iTerm2 graphics (OSC 1337) and fallback modes**
 3. **Syntax highlighting in multiple programming languages**
 4. **Interactive terminal features (OSC 8 hyperlinks, pager, themes)**
+5. **Native Mermaid diagram rendering (graphical, Unicode ANSI, and pure ASCII)**
 
 ---
 
@@ -62,7 +63,7 @@ When terminal columns are restricted or content is long, the table engine must p
 | **Time-Series Engine** | High-throughput metrics ingestion pipeline storing Prometheus metrics and alerting telemetry. | Disk IOPS saturation during high-cardinality metric spikes causing ingest backpressure. | Enable write-ahead log compression and drop high-cardinality label dimensions. |
 
 > **Verification Check**:
-> - Run with `-w 80` (`./bin/md -w 80 test.md`).
+> - Run with `-w 80` (`./bin/mdee -w 80 test.md`).
 > - Notice how each cell wraps cleanly on word boundaries while maintaining row separation!
 
 ---
@@ -224,29 +225,106 @@ In modern terminals (including iTerm2), the links below are clickable with `Cmd 
 
 ---
 
-## 7. Interactive CLI Test Matrix
+## 7. Native Mermaid Diagrams (Inline Graphics & Text Fallback)
+
+`mdee` embeds `golang-mermaid` to render Mermaid diagrams directly inside the terminal graphically using native graphics protocols (iTerm2 OSC 1337, Kitty APC, and DEC Sixel). When running in terminals that do not support graphics protocols, when output is piped or redirected, or when explicitly requested via CLI flags, it automatically degrades to clean Unicode box-drawing or pure 7-bit ASCII text diagrams.
+
+### 7.1 Microservice Architecture Topology (Flowchart)
+
+```mermaid
+flowchart TD
+    Client[Web & Mobile Clients] -->|HTTPS / TLS| LB[Edge Load Balancer]
+    LB -->|gRPC / HTTP2| Gateway[API Gateway]
+    
+    subgraph CoreServices [Kubernetes Core Services]
+        Gateway --> Auth[Auth Service]
+        Gateway --> Order[Order Service]
+        Gateway --> Inventory[Inventory Service]
+    end
+    
+    subgraph DataTier [Storage & Persistence]
+        Order --> DB[(PostgreSQL Primary)]
+        Inventory --> Cache[(Redis Cluster)]
+    end
+    
+    Gateway -.->|Trace Spans| Jaeger[OpenTelemetry Collector]
+```
+
+### 7.2 Incident Response & Failover Sequence
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User
+    participant CDN as Cloudflare Edge
+    participant Origin as Primary US-East
+    participant Standby as Failover US-West
+    participant DNS as Route53 Traffic Flow
+
+    User->>CDN: GET /checkout
+    CDN->>Origin: Forward Request
+    Note over Origin: Latency Spike (p99 > 2.5s)
+    Origin-->>CDN: 504 Gateway Timeout
+    CDN->>DNS: Health Check Alarm Triggered
+    DNS-->>CDN: Update Geo-Routing to US-West
+    CDN->>Standby: Retry Request
+    Standby-->>CDN: 200 OK (85ms)
+    CDN-->>User: HTTP 200 OK (Mitigated)
+```
+
+### 7.3 Service Health State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> Provisioning
+    Provisioning --> Healthy: Synthetic Probe 200 OK
+    Healthy --> Degraded: p99 Latency > SLO Threshold
+    Degraded --> Outage: Error Rate > 5%
+    Outage --> Remediating: Auto-Remediation Triggered
+    Remediating --> Healthy: Canary Verified
+    Degraded --> Healthy: Traffic Normalized
+```
+
+---
+
+## 8. Interactive CLI Test Matrix
 
 Run these commands in your terminal to verify various viewer capabilities:
 
 ```bash
-# 1. Run terminal capabilities diagnostic
+# 1. Run terminal capabilities diagnostic (including Mermaid engine)
 ./bin/mdee doctor
 
-# 2. View in default dark theme
+# 2. View in default dark theme (graphical Mermaid in iTerm2 / Kitty)
 ./bin/mdee test.md
 
-# 3. View in Dracula theme with double borders
+# 3. Render Mermaid diagrams as ANSI / Unicode box-drawing text art
+./bin/mdee --mermaid ansi test.md
+
+# 4. Render Mermaid diagrams as pure 7-bit ASCII diagrams
+./bin/mdee --mermaid ascii test.md
+
+# 5. Display raw syntax-highlighted Mermaid source code blocks
+./bin/mdee --mermaid raw test.md
+
+# 6. Render Mermaid image with custom width and high-contrast background canvas
+./bin/mdee --mermaid-width 80 --mermaid-bg "#1e1e2e" test.md
+
+# 7. Render Mermaid image with crisp white canvas card
+./bin/mdee --mermaid-bg white test.md
+
+# 8. View with Dracula theme and double borders
 ./bin/mdee --theme dracula --table-style double test.md
 
-# 4. View in Light theme with box borders
+# 9. View with Light theme and box borders
 ./bin/mdee --theme light --table-style box test.md
 
-# 5. Constrain width to 90 columns with line numbers
+# 10. Constrain width to 90 columns with line numbers
 ./bin/mdee -w 90 -n test.md
 
-# 6. Plain text mode (safe for piping / grep / awk)
+# 11. Plain text mode (safe for piping / grep / awk, ASCII diagrams)
 ./bin/mdee --plain test.md | grep "Healthy"
 
-# 7. Test broken pipe handling
+# 12. Test broken pipe handling
 cat test.md | ./bin/mdee --plain | head -n 25
 ```

@@ -96,7 +96,7 @@
           The high-performance Markdown viewer <span class="text-gradient">your terminal deserves.</span>
         </h1>
         <p class="hero-subtitle">
-          Render rich GitHub-flavored Markdown with inline iTerm2 images, responsive ANSI tables, Chroma syntax highlighting, and clickable OSC 8 links directly in your command line.
+          Render rich GitHub-flavored Markdown with inline iTerm2 images, native Mermaid diagrams, responsive ANSI tables, Chroma syntax highlighting, and clickable OSC 8 links directly in your command line.
         </p>
 
         <!-- Quick Install Box -->
@@ -206,7 +206,7 @@
 
         <div class="bento-grid">
           <!-- Card 1: Inline Graphics -->
-          <div class="bento-card bento-col-8">
+          <div class="bento-card bento-col-6">
             <div>
               <div class="card-icon">🖼️</div>
               <h3>Native Inline Images (OSC 1337)</h3>
@@ -219,7 +219,21 @@
             </div>
           </div>
 
-          <!-- Card 2: Clickable Hyperlinks -->
+          <!-- Card 2: Native Mermaid Diagrams -->
+          <div class="bento-card bento-col-6">
+            <div>
+              <div class="card-icon">🧜‍♀️</div>
+              <h3>Native Mermaid Diagrams</h3>
+              <p>
+                Renders flowcharts, sequence diagrams, and state machines graphically via iTerm2 OSC 1337 and Kitty protocols. Features Catmull-Rom 2x HiDPI resampling, automated background contrast cards (fixing dark/light terminal blend), and graceful cascading fallback to Unicode box-drawing or pure 7-bit ASCII text art.
+              </p>
+            </div>
+            <div class="code-box">
+              <code>$ mdee --mermaid auto --mermaid-bg dark architecture.md</code>
+            </div>
+          </div>
+
+          <!-- Card 3: Clickable Hyperlinks -->
           <div class="bento-card bento-col-4">
             <div>
               <div class="card-icon">🔗</div>
@@ -233,8 +247,8 @@
             </div>
           </div>
 
-          <!-- Card 3: Responsive Tables -->
-          <div class="bento-card bento-col-6">
+          <!-- Card 4: Responsive Tables -->
+          <div class="bento-card bento-col-4">
             <div>
               <div class="card-icon">📊</div>
               <h3>Unicode-Aware Responsive Tables</h3>
@@ -247,8 +261,8 @@
             </div>
           </div>
 
-          <!-- Card 4: Chroma Themes -->
-          <div class="bento-card bento-col-6">
+          <!-- Card 5: Chroma Themes -->
+          <div class="bento-card bento-col-4">
             <div>
               <div class="card-icon">🎨</div>
               <h3>Chroma Syntax Highlighting</h3>
@@ -261,7 +275,7 @@
             </div>
           </div>
 
-          <!-- Card 5: SRE Robustness (Full width) -->
+          <!-- Card 6: SRE Robustness (Full width) -->
           <div class="bento-card bento-col-12">
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem;">
               <div>
@@ -451,6 +465,42 @@
                 <td>—</td>
                 <td><code>"auto"</code></td>
                 <td>Image column constraint: <code>auto</code>, <code>100%</code>, <code>80</code>, <code>400px</code></td>
+              </tr>
+              <tr>
+                <td><span class="code-badge">--image-height</span></td>
+                <td>—</td>
+                <td><code>"auto"</code></td>
+                <td>Image height constraint: <code>auto</code>, <code>20</code>, <code>300px</code></td>
+              </tr>
+              <tr>
+                <td><span class="code-badge">--mermaid</span></td>
+                <td><span class="code-badge">-m</span></td>
+                <td><code>"auto"</code></td>
+                <td>Mermaid render mode: <code>auto</code>, <code>image</code>, <code>ansi</code>, <code>unicode</code>, <code>ascii</code>, <code>raw</code></td>
+              </tr>
+              <tr>
+                <td><span class="code-badge">--mermaid-theme</span></td>
+                <td>—</td>
+                <td><code>""</code></td>
+                <td>Mermaid theme: <code>dark</code>, <code>default</code>, <code>slate</code>, <code>blueprint</code>, <code>neon</code>, <code>neutral</code>, <code>forest</code></td>
+              </tr>
+              <tr>
+                <td><span class="code-badge">--mermaid-width</span></td>
+                <td>—</td>
+                <td><code>"auto"</code></td>
+                <td>Mermaid display width constraint: <code>auto</code> (responsive cell-fit), <code>100%</code>, <code>80</code>, <code>800px</code></td>
+              </tr>
+              <tr>
+                <td><span class="code-badge">--mermaid-bg</span></td>
+                <td>—</td>
+                <td><code>"auto"</code></td>
+                <td>Mermaid background canvas: <code>auto</code>, <code>dark</code>, <code>light</code>, <code>transparent</code>, <code>#RRGGBB</code></td>
+              </tr>
+              <tr>
+                <td><span class="code-badge">--mermaid-scale</span></td>
+                <td>—</td>
+                <td><code>2.0</code></td>
+                <td>HiDPI rasterization scale factor (<code>1.0</code> - <code>4.0</code> for Retina sharpness)</td>
               </tr>
               <tr>
                 <td><span class="code-badge">--line-numbers</span></td>

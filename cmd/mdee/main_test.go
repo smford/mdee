@@ -75,3 +75,61 @@ func TestTableAlignmentInCLI(t *testing.T) {
 	_ = ctx
 	_ = doc
 }
+
+func TestCLIMermaidFlags(t *testing.T) {
+	t.Run("valid mermaid modes", func(t *testing.T) {
+		modes := []string{"auto", "image", "ansi", "unicode", "ascii", "raw"}
+		for _, m := range modes {
+			cmd := newRootCmd()
+			cmd.SetArgs([]string{"--mermaid", m, "--version"})
+			var buf bytes.Buffer
+			cmd.SetOut(&buf)
+			if err := cmd.Execute(); err != nil {
+				t.Errorf("expected mode %q to be accepted, got err: %v", m, err)
+			}
+		}
+	})
+
+	t.Run("invalid mermaid mode returns error", func(t *testing.T) {
+		cmd := newRootCmd()
+		cmd.SetArgs([]string{"--mermaid", "invalid-mode", "testdata/demo.md"})
+		var buf bytes.Buffer
+		cmd.SetOut(&buf)
+		cmd.SetErr(&buf)
+		err := cmd.Execute()
+		if err == nil {
+			t.Errorf("expected error for invalid mermaid mode")
+		}
+		if !strings.Contains(err.Error(), "invalid mermaid mode") {
+			t.Errorf("expected 'invalid mermaid mode' in error message: %v", err)
+		}
+	})
+
+	t.Run("mermaid theme and scale flags", func(t *testing.T) {
+		cmd := newRootCmd()
+		cmd.SetArgs([]string{"--mermaid-theme", "slate", "--mermaid-scale", "2.0", "--version"})
+		var buf bytes.Buffer
+		cmd.SetOut(&buf)
+		if err := cmd.Execute(); err != nil {
+			t.Errorf("expected theme and scale flags to be accepted, got: %v", err)
+		}
+	})
+
+	t.Run("mermaid width and background flags", func(t *testing.T) {
+		cmd := newRootCmd()
+		cmd.SetArgs([]string{"--mermaid-width", "80", "--mermaid-bg", "#1e1e2e", "--version"})
+		var buf bytes.Buffer
+		cmd.SetOut(&buf)
+		if err := cmd.Execute(); err != nil {
+			t.Errorf("expected width and bg flags to be accepted, got: %v", err)
+		}
+
+		cmdAlias := newRootCmd()
+		cmdAlias.SetArgs([]string{"--mermaid-background", "dark", "--version"})
+		var bufAlias bytes.Buffer
+		cmdAlias.SetOut(&bufAlias)
+		if err := cmdAlias.Execute(); err != nil {
+			t.Errorf("expected mermaid-background alias to be accepted, got: %v", err)
+		}
+	})
+}

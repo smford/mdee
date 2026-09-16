@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/alecthomas/chroma/v2/formatters"
 	"github.com/alecthomas/chroma/v2/lexers"
 	"github.com/alecthomas/chroma/v2/styles"
+	mermaid "github.com/smford/golang-mermaid"
 	"github.com/smford/mdee/internal/config"
 	"github.com/smford/mdee/internal/image"
 	"github.com/smford/mdee/internal/table"
@@ -334,7 +336,125 @@ func (s *renderState) renderFencedCodeBlock(cb *gast.FencedCodeBlock) string {
 	}
 
 	lang := string(cb.Language(s.source))
+	trimmedLang := strings.TrimSpace(lang)
+	if strings.EqualFold(trimmedLang, "mermaid") {
+		return s.renderMermaid(codeBuf.String())
+	}
+
 	return s.highlightCode(codeBuf.String(), lang)
+}
+
+func (s *renderState) renderMermaid(code string) string {
+	source := strings.TrimSpace(code)
+	if source == "" {
+		return ""
+	}
+
+	modeStr := strings.ToLower(strings.TrimSpace(s.renderer.opts.MermaidMode))
+	if modeStr == "raw" || modeStr == "code" {
+		return s.highlightCode(code, "mermaid")
+	}
+
+	// Determine render mode
+	var targetMode mermaid.RenderMode
+	switch modeStr {
+	case "ascii":
+		targetMode = mermaid.ModeASCII
+	case "ansi", "unicode", "text":
+		targetMode = mermaid.ModeUnicode
+	case "image", "graphical":
+		targetMode = mermaid.ModeImage
+	case "auto", "":
+		if s.renderer.opts.Plain {
+			targetMode = mermaid.ModeASCII
+		} else if s.renderer.opts.ImageMode == "never" {
+			targetMode = mermaid.ModeUnicode
+		} else if s.renderer.opts.ImageMode == "always" {
+			targetMode = mermaid.ModeImage
+		} else {
+			targetMode = mermaid.ModeAuto
+		}
+	default:
+		targetMode = mermaid.ModeAuto
+	}
+
+	cols := s.width()
+	if cols <= 0 {
+		cols = 80
+	}
+
+	forceTTY := s.renderer.termInfo.IsTTY || s.renderer.opts.ImageMode == "always" || modeStr == "image" || modeStr == "graphical"
+
+	opts := []mermaid.Option{
+		mermaid.WithMode(targetMode),
+		mermaid.WithColumns(cols),
+		mermaid.WithCache(true),
+		mermaid.WithForceTTY(forceTTY),
+	}
+
+	if s.renderer.opts.ImageWidth != "" && s.renderer.opts.ImageWidth != "auto" {
+		opts = append(opts, mermaid.WithWidth(s.renderer.opts.ImageWidth))
+	}
+	if s.renderer.opts.ImageHeight != "" && s.renderer.opts.ImageHeight != "auto" {
+		opts = append(opts, mermaid.WithHeight(s.renderer.opts.ImageHeight))
+	}
+	if s.renderer.opts.MermaidScale > 0 {
+		opts = append(opts, mermaid.WithScale(s.renderer.opts.MermaidScale))
+	}
+
+	// Theme resolution
+	if s.renderer.opts.MermaidTheme != "" {
+		opts = append(opts, mermaid.WithTheme(s.renderer.opts.MermaidTheme))
+	} else if !s.renderer.opts.Plain {
+		switch strings.ToLower(s.renderer.opts.Theme) {
+		case "light", "solarized-light":
+			opts = append(opts, mermaid.WithTheme("default"))
+		default:
+			opts = append(opts, mermaid.WithTheme("dark"))
+		}
+	}
+
+	// Observability fallback hook
+	opts = append(opts, mermaid.WithOnFallback(func(reason string, err error) {
+		if s.renderer.opts.Debug {
+			fmt.Fprintf(os.Stderr, "[DEBUG] Mermaid fallback triggered: %s (err: %v)\n", reason, err)
+		}
+	}))
+
+	printer := mermaid.New(opts...)
+	res, err := printer.Render(s.ctx, source)
+	if err != nil {
+		if s.renderer.opts.Debug {
+			fmt.Fprintf(os.Stderr, "[DEBUG] Mermaid render failed: %v, falling back to code block\n", err)
+		}
+		return s.highlightCode(code, "mermaid")
+	}
+
+	if s.renderer.opts.Debug && res != nil {
+		fmt.Fprintf(os.Stderr, "[DEBUG] Mermaid rendered: mode=%s protocol=%s fallback=%v duration=%v\n",
+			res.Mode, res.Protocol, res.FallbackOccurred, res.Duration)
+	}
+
+	if res == nil || res.Output == "" {
+		return s.highlightCode(code, "mermaid")
+	}
+
+	if res.Mode == mermaid.ModeImage && len(res.ImageData) > 0 {
+		enhanced, err := processMermaidImage(
+			res.ImageData,
+			res.Protocol,
+			s.renderer.opts,
+			cols,
+			s.renderer.termInfo.IsTmux,
+		)
+		if err == nil && enhanced != "" {
+			return strings.TrimRight(enhanced, "\n")
+		} else if s.renderer.opts.Debug && err != nil {
+			fmt.Fprintf(os.Stderr, "[DEBUG] Mermaid image enhancement failed: %v\n", err)
+		}
+	}
+
+	return strings.TrimRight(res.Output, "\n")
 }
 
 func (s *renderState) renderIndentedCodeBlock(cb *gast.CodeBlock) string {

@@ -33,6 +33,17 @@ Below is the verified architecture diagram rendered directly in iTerm2:
 
 ![SRE Infrastructure Telemetry](sample.png "SRE Infrastructure Metrics")
 
+### High-Availability Failover Topology
+
+```mermaid
+flowchart TD
+    Ingress[Edge Ingress] --> Router{Regional Router}
+    Router -->|Primary| RegionA[us-east-1 Cluster]
+    Router -->|Standby| RegionB[us-west-2 Cluster]
+    RegionA --> DB[(Primary DB)]
+    RegionB -.->|Async Replication| DB
+```
+
 ---
 
 ## SRE Runbook Automation

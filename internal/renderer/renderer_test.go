@@ -210,4 +210,118 @@ Welcome to the **` + "`md`" + `** test suite!
 	lipgloss.SetColorProfile(termenv.Ascii)
 }
 
+func TestRenderer_Mermaid_Modes(t *testing.T) {
+	mermaidDoc := "```mermaid\nflowchart TD\n    Client --> Proxy\n    Proxy --> Server\n```"
+
+	t.Run("auto mode (fallback in non-tty)", func(t *testing.T) {
+		opts := config.DefaultOptions()
+		opts.MermaidMode = "auto"
+		r := New(opts)
+
+		out, err := r.Render(context.Background(), []byte(mermaidDoc))
+		if err != nil {
+			t.Fatalf("render failed: %v", err)
+		}
+		if !strings.Contains(out, "Client") || !strings.Contains(out, "Server") {
+			t.Errorf("expected diagram text in output: %s", out)
+		}
+	})
+
+	t.Run("explicit unicode / ansi mode", func(t *testing.T) {
+		opts := config.DefaultOptions()
+		opts.MermaidMode = "unicode"
+		r := New(opts)
+
+		out, err := r.Render(context.Background(), []byte(mermaidDoc))
+		if err != nil {
+			t.Fatalf("render failed: %v", err)
+		}
+		if !strings.Contains(out, "Client") || !strings.Contains(out, "Proxy") {
+			t.Errorf("expected diagram text in output: %s", out)
+		}
+		if !strings.Contains(out, "┌") && !strings.Contains(out, "╭") && !strings.Contains(out, "│") {
+			t.Errorf("expected unicode box characters in output: %s", out)
+		}
+	})
+
+	t.Run("explicit ascii mode", func(t *testing.T) {
+		opts := config.DefaultOptions()
+		opts.MermaidMode = "ascii"
+		r := New(opts)
+
+		out, err := r.Render(context.Background(), []byte(mermaidDoc))
+		if err != nil {
+			t.Fatalf("render failed: %v", err)
+		}
+		if !strings.Contains(out, "Client") || !strings.Contains(out, "Proxy") {
+			t.Errorf("expected diagram text in output: %s", out)
+		}
+		if strings.Contains(out, "\x1b[") {
+			t.Errorf("expected strict ASCII output without ANSI escape codes: %q", out)
+		}
+		if !strings.Contains(out, "+") && !strings.Contains(out, "|") {
+			t.Errorf("expected ASCII characters in output: %s", out)
+		}
+	})
+
+	t.Run("explicit raw mode", func(t *testing.T) {
+		opts := config.DefaultOptions()
+		opts.MermaidMode = "raw"
+		r := New(opts)
+
+		out, err := r.Render(context.Background(), []byte(mermaidDoc))
+		if err != nil {
+			t.Fatalf("render failed: %v", err)
+		}
+		if !strings.Contains(out, "mermaid") || !strings.Contains(out, "flowchart TD") {
+			t.Errorf("expected raw code block in output: %s", out)
+		}
+	})
+
+	t.Run("plain flag forces ascii diagram without ansi leaks", func(t *testing.T) {
+		opts := config.DefaultOptions()
+		opts.Plain = true
+		r := New(opts)
+
+		out, err := r.Render(context.Background(), []byte(mermaidDoc))
+		if err != nil {
+			t.Fatalf("render failed: %v", err)
+		}
+		if strings.Contains(out, "\x1b") {
+			t.Errorf("plain mode must not contain any ANSI escape characters: %q", out)
+		}
+		if !strings.Contains(out, "Client") || !strings.Contains(out, "Server") {
+			t.Errorf("expected diagram text in plain output: %s", out)
+		}
+	})
+
+	t.Run("images never forces text diagram", func(t *testing.T) {
+		opts := config.DefaultOptions()
+		opts.ImageMode = "never"
+		r := New(opts)
+
+		out, err := r.Render(context.Background(), []byte(mermaidDoc))
+		if err != nil {
+			t.Fatalf("render failed: %v", err)
+		}
+		if !strings.Contains(out, "Client") || !strings.Contains(out, "Proxy") {
+			t.Errorf("expected text diagram in output: %s", out)
+		}
+	})
+
+	t.Run("malformed mermaid syntax gracefully degrades without panic", func(t *testing.T) {
+		opts := config.DefaultOptions()
+		r := New(opts)
+
+		badDoc := "```mermaid\nmalformed invalid syntax %%%!!!\n```"
+		out, err := r.Render(context.Background(), []byte(badDoc))
+		if err != nil {
+			t.Fatalf("unexpected render error on malformed diagram: %v", err)
+		}
+		if !strings.Contains(out, "malformed invalid syntax") {
+			t.Errorf("expected fallback output to preserve diagram text: %s", out)
+		}
+	})
+}
+
 
