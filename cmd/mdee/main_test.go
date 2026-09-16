@@ -201,3 +201,102 @@ mermaid:
 		}
 	})
 }
+
+func TestInitCmd(t *testing.T) {
+	t.Run("init creates default config file", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		outPath := filepath.Join(tmpDir, ".mdeerc")
+
+		cmd := newInitCmd()
+		cmd.SetArgs([]string{"--output", outPath})
+		var buf bytes.Buffer
+		cmd.SetOut(&buf)
+
+		if err := cmd.Execute(); err != nil {
+			t.Fatalf("expected init to succeed, got: %v", err)
+		}
+
+		data, err := os.ReadFile(outPath)
+		if err != nil {
+			t.Fatalf("expected config file to be created: %v", err)
+		}
+		if !strings.Contains(string(data), "theme: \"dark\"") {
+			t.Errorf("expected config file to contain default dark theme")
+		}
+		if !strings.Contains(buf.String(), "Created default configuration file") {
+			t.Errorf("expected success message in output, got: %s", buf.String())
+		}
+	})
+
+	t.Run("init fails if file exists without force", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		outPath := filepath.Join(tmpDir, ".mdeerc")
+		_ = os.WriteFile(outPath, []byte("existing"), 0600)
+
+		cmd := newInitCmd()
+		cmd.SetArgs([]string{"--output", outPath})
+		var buf bytes.Buffer
+		cmd.SetOut(&buf)
+
+		err := cmd.Execute()
+		if err == nil {
+			t.Fatal("expected init to fail on existing file without --force")
+		}
+		if !strings.Contains(err.Error(), "already exists") {
+			t.Errorf("expected 'already exists' in error, got: %v", err)
+		}
+	})
+
+	t.Run("init succeeds if file exists with force", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		outPath := filepath.Join(tmpDir, ".mdeerc")
+		_ = os.WriteFile(outPath, []byte("existing"), 0600)
+
+		cmd := newInitCmd()
+		cmd.SetArgs([]string{"--output", outPath, "--force"})
+		var buf bytes.Buffer
+		cmd.SetOut(&buf)
+
+		if err := cmd.Execute(); err != nil {
+			t.Fatalf("expected init --force to succeed, got: %v", err)
+		}
+
+		data, _ := os.ReadFile(outPath)
+		if string(data) == "existing" {
+			t.Errorf("expected file to be overwritten")
+		}
+	})
+
+	t.Run("init with stdout prints without creating file", func(t *testing.T) {
+		cmd := newInitCmd()
+		cmd.SetArgs([]string{"--stdout"})
+		var buf bytes.Buffer
+		cmd.SetOut(&buf)
+
+		if err := cmd.Execute(); err != nil {
+			t.Fatalf("expected init --stdout to succeed, got: %v", err)
+		}
+
+		if !strings.Contains(buf.String(), "theme: \"dark\"") {
+			t.Errorf("expected output to contain default config template")
+		}
+	})
+
+	t.Run("root command with --init-config flag", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		outPath := filepath.Join(tmpDir, ".mdeerc")
+
+		cmd := newRootCmd()
+		cmd.SetArgs([]string{"--init-config", "--config", outPath})
+		var buf bytes.Buffer
+		cmd.SetOut(&buf)
+
+		if err := cmd.Execute(); err != nil {
+			t.Fatalf("expected root --init-config to succeed, got: %v", err)
+		}
+
+		if _, err := os.Stat(outPath); err != nil {
+			t.Fatalf("expected config file to be created: %v", err)
+		}
+	})
+}

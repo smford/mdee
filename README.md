@@ -187,6 +187,7 @@ mdee -c ~/.mdeerc --theme dracula report.md
 | `--no-pager`    | | `false` | Disable pager output |
 | `--plain`       | | `false` | Output plain text without ANSI escape sequences |
 | `--debug`       | | `false` | Print diagnostic debug logs to stderr |
+| `--init-config` | | `false` | Generate default `~/.mdeerc` configuration file and exit |
 
 ---
 
@@ -236,9 +237,46 @@ mermaid:
 
 A complete reference configuration is available at [`.mdeerc.example`](.mdeerc.example).
 
+### Generating a Default Configuration File
+
+To quickly generate a documented `~/.mdeerc` file pre-populated with standard defaults, run:
+
+```bash
+# Generate ~/.mdeerc with default values
+mdee init
+
+# Print template to stdout for previewing or piping
+mdee init --stdout
+
+# Write to a custom path
+mdee init --output ~/.config/mdee/mdeerc.yaml
+
+# Overwrite existing config file
+mdee init --force
+```
+
+Alternatively, use the `--init-config` flag on the root command:
+
+```bash
+mdee --init-config
+```
+
 ---
 
 ## Subcommands
+
+### `mdee init`
+Generates a fully documented default `~/.mdeerc` file to help you customize your settings:
+
+```bash
+$ mdee init
+Created default configuration file: /Users/username/.mdeerc
+```
+
+Flags:
+- `-f, --force`: Overwrite existing configuration file if it already exists.
+- `-o, --output <path>`: Destination path (defaults to `~/.mdeerc`).
+- `--stdout`: Output configuration template to standard output instead of writing to disk.
 
 ### `mdee doctor`
 Diagnoses your current terminal environment and verifies protocol support:

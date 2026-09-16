@@ -303,7 +303,7 @@
                 <div class="card-icon">⚙️</div>
                 <h3>Persistent Config (~/.mdeerc)</h3>
                 <p>
-                  Auto-loads <code>~/.mdeerc</code> in YAML or JSON, or point to custom config files with <code>-c</code> / <code>--config</code>.
+                  Auto-loads <code>~/.mdeerc</code> in YAML or JSON, point to custom configs with <code>-c</code>, or run <code>mdee init</code> to generate one.
                 </p>
               </div>
             </div>
@@ -544,6 +544,12 @@
                 <td>—</td>
                 <td><code>false</code></td>
                 <td>Emit SRE diagnostic log traces to stderr</td>
+              </tr>
+              <tr>
+                <td><span class="code-badge">--init-config</span></td>
+                <td>—</td>
+                <td><code>false</code></td>
+                <td>Generate default <code>~/.mdeerc</code> configuration file and exit</td>
               </tr>
             </tbody>
           </table>

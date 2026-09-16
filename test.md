@@ -335,4 +335,10 @@ cat test.md | ./bin/mdee --plain | head -n 25
 # 14. Run terminal diagnostics showing config file status
 ./bin/mdee doctor
 ./bin/mdee doctor --config .mdeerc.example
+
+# 15. Preview default ~/.mdeerc configuration template
+./bin/mdee init --stdout
+
+# 16. Generate default configuration file to custom path
+./bin/mdee init --output /tmp/.mdeerc.test --force
 ```

@@ -112,7 +112,7 @@ func RunDiagnostics(configPath ...string) string {
 		} else if loaded {
 			cfgStatus = okStyle.Render("LOADED")
 		} else {
-			cfgStatus = infoStyle.Render("Not Found (Using defaults)")
+			cfgStatus = infoStyle.Render("Not Found (Run 'mdee init')")
 		}
 	} else {
 		cfgStatus = infoStyle.Render("Not Configured")

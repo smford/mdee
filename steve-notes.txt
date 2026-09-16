@@ -61,3 +61,9 @@ You can test the application using any of the following commands in iTerm2:
 
   # 18. Inspect diagnostic doctor report with custom config
   ./bin/mdee doctor --config .mdeerc.example
+
+  # 19. Preview default ~/.mdeerc configuration template to stdout
+  ./bin/mdee init --stdout
+
+  # 20. Generate default configuration file to custom path
+  ./bin/mdee init --output /tmp/.mdeerc.test --force

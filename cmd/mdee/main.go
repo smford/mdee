@@ -53,6 +53,7 @@ func newRootCmd() *cobra.Command {
 		noPager      bool
 		noHyperlinks bool
 		configFile   string
+		initConfig   bool
 	)
 
 	cmd := &cobra.Command{
@@ -65,10 +66,28 @@ it delivers accurate inline graphics using iTerm2 OSC 1337 and Kitty protocols,
 graphical Mermaid diagram rendering with automated ANSI/ASCII fallback,
 word-wrapped and auto-aligned tables with Unicode box borders, syntax-highlighted
 code blocks, and OSC 8 clickable hyperlinks.`,
-		SilenceUsage: true,
-		Args:         cobra.ArbitraryArgs,
+		SilenceUsage:  true,
+		SilenceErrors: true,
+		Args:          cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			flags := cmd.Flags()
+
+			// Fast path: generate default configuration file if --init-config requested
+			if initConfig {
+				target := configFile
+				if target == "" {
+					target = config.DefaultConfigFile()
+				}
+				if target == "" {
+					return errors.New("unable to determine user home directory for ~/.mdeerc; specify --config <path>")
+				}
+				path, err := config.WriteDefaultConfigFile(target, false)
+				if err != nil {
+					return err
+				}
+				fmt.Fprintf(cmd.OutOrStdout(), "Created default configuration file: %s\n", path)
+				return nil
+			}
 
 			// Load configuration file (~/.mdeerc or custom --config)
 			cfgPath := configFile
@@ -181,9 +200,57 @@ code blocks, and OSC 8 clickable hyperlinks.`,
 	flags.BoolVar(&noPager, "no-pager", false, "Disable pager output")
 	flags.BoolVar(&opts.Plain, "plain", false, "Output plain text without ANSI escape sequences or colors")
 	flags.BoolVar(&opts.Debug, "debug", false, "Print debug diagnostic logs to stderr")
+	flags.BoolVar(&initConfig, "init-config", false, "Generate default ~/.mdeerc configuration file and exit")
 
 	cmd.AddCommand(newDoctorCmd())
 	cmd.AddCommand(newVersionCmd())
+	cmd.AddCommand(newInitCmd())
+
+	return cmd
+}
+
+func newInitCmd() *cobra.Command {
+	var (
+		force       bool
+		output      string
+		printStdout bool
+	)
+
+	cmd := &cobra.Command{
+		Use:     "init",
+		Aliases: []string{"init-config", "config-init"},
+		Short:   "Generate a default ~/.mdeerc configuration file",
+		Long: `Generate a default configuration file with recommended settings and detailed comments.
+By default, writes to ~/.mdeerc. If ~/.mdeerc already exists, use --force to overwrite it.
+Use --stdout to print the configuration template to the terminal instead of writing to disk.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if printStdout {
+				_, err := fmt.Fprint(cmd.OutOrStdout(), config.DefaultConfigTemplate())
+				return err
+			}
+
+			target := output
+			if target == "" {
+				target = config.DefaultConfigFile()
+			}
+			if target == "" {
+				return errors.New("unable to determine user home directory for ~/.mdeerc; specify --output <path>")
+			}
+
+			path, err := config.WriteDefaultConfigFile(target, force)
+			if err != nil {
+				return err
+			}
+
+			fmt.Fprintf(cmd.OutOrStdout(), "Created default configuration file: %s\n", path)
+			return nil
+		},
+	}
+
+	flags := cmd.Flags()
+	flags.BoolVarP(&force, "force", "f", false, "Overwrite existing configuration file if it exists")
+	flags.StringVarP(&output, "output", "o", "", "Destination file path (default: ~/.mdeerc)")
+	flags.BoolVar(&printStdout, "stdout", false, "Print default configuration to stdout instead of writing to file")
 
 	return cmd
 }

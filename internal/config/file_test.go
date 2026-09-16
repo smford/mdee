@@ -287,3 +287,62 @@ func TestLoadConfigFile_RealFile(t *testing.T) {
 		t.Errorf("Expected ConfigFile=%q, got %q", cfgPath, opts.ConfigFile)
 	}
 }
+
+func TestDefaultConfigTemplate_ParsesSuccessfully(t *testing.T) {
+	tmpl := DefaultConfigTemplate()
+	if len(tmpl) == 0 {
+		t.Fatal("Expected non-empty default config template")
+	}
+
+	opts := DefaultOptions()
+	if err := ApplyConfigData(&opts, []byte(tmpl)); err != nil {
+		t.Fatalf("DefaultConfigTemplate failed to parse: %v", err)
+	}
+
+	if opts.Theme != "dark" {
+		t.Errorf("Expected default theme 'dark', got %q", opts.Theme)
+	}
+	if opts.TableStyle != "rounded" {
+		t.Errorf("Expected default table-style 'rounded', got %q", opts.TableStyle)
+	}
+	if opts.MermaidScale != 2.0 {
+		t.Errorf("Expected default mermaid scale 2.0, got %f", opts.MermaidScale)
+	}
+	if !opts.Hyperlinks {
+		t.Errorf("Expected default hyperlinks=true")
+	}
+}
+
+func TestWriteDefaultConfigFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	targetPath := filepath.Join(tmpDir, "subdir", ".mdeerc")
+
+	// 1. Initial creation succeeds and creates parent directory
+	resolved, err := WriteDefaultConfigFile(targetPath, false)
+	if err != nil {
+		t.Fatalf("WriteDefaultConfigFile failed: %v", err)
+	}
+	if resolved != targetPath {
+		t.Errorf("Expected resolved path %q, got %q", targetPath, resolved)
+	}
+
+	data, err := os.ReadFile(targetPath)
+	if err != nil {
+		t.Fatalf("Failed to read created file: %v", err)
+	}
+	if string(data) != DefaultConfigTemplate() {
+		t.Errorf("File content does not match DefaultConfigTemplate()")
+	}
+
+	// 2. Writing again without force should error
+	_, err = WriteDefaultConfigFile(targetPath, false)
+	if err == nil {
+		t.Fatal("Expected error when file already exists without force, got nil")
+	}
+
+	// 3. Writing again with force should succeed
+	_, err = WriteDefaultConfigFile(targetPath, true)
+	if err != nil {
+		t.Fatalf("Expected success when force=true, got: %v", err)
+	}
+}
