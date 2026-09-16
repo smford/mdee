@@ -13,23 +13,33 @@ type Options struct {
 	Pager       bool   // Enable pager for long output in interactive TTY
 	Plain       bool   // Plain text output with no ANSI escape sequences
 	Debug       bool   // Output diagnostic / debug logs to stderr
-	BasePath    string // Directory of input markdown file for resolving relative assets
+	BasePath     string  // Directory of input markdown file for resolving relative assets
+	MermaidMode  string  // "auto", "image", "ansi", "unicode", "ascii", "raw"
+	MermaidTheme string  // Diagram theme: dark, default, slate, blueprint, neon, neutral, forest
+	MermaidWidth string  // Diagram image width: "auto", "100%", "80", "800px" (default: "auto")
+	MermaidBg    string  // Diagram image background: "auto", "dark", "light", "transparent", or "#RRGGBB" (default: "auto")
+	MermaidScale float64 // Rasterization scale factor for Mermaid images (default: 2.0 for Retina/HiDPI)
 }
 
 // DefaultOptions returns standard SRE defaults.
 func DefaultOptions() Options {
 	return Options{
-		Width:       0,
-		Theme:       "dark",
-		TableStyle:  "rounded",
-		ImageMode:   "auto",
-		ImageWidth:  "auto",
-		ImageHeight: "auto",
-		LineNumbers: false,
-		Hyperlinks:  true,
-		Pager:       false,
-		Plain:       false,
-		Debug:       false,
-		BasePath:    "",
+		Width:        0,
+		Theme:        "dark",
+		TableStyle:   "rounded",
+		ImageMode:    "auto",
+		ImageWidth:   "auto",
+		ImageHeight:  "auto",
+		LineNumbers:  false,
+		Hyperlinks:   true,
+		Pager:        false,
+		Plain:        false,
+		Debug:        false,
+		BasePath:     "",
+		MermaidMode:  "auto",
+		MermaidTheme: "",
+		MermaidWidth: "auto",
+		MermaidBg:    "auto",
+		MermaidScale: 2.0,
 	}
 }

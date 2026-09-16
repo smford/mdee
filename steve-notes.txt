@@ -1,0 +1,56 @@
+### Testing Your Application Against test.md
+
+You can test the application using any of the following commands in iTerm2:
+
+  # 1. Build the binary
+  make build
+
+  # 2. View test.md with the default dark theme and rounded borders
+  ./bin/mdee test.md
+
+  # 3. View with Dracula theme and double borders
+  ./bin/mdee --theme dracula --table-style double test.md
+
+  # 4. View with Light theme and box borders
+  ./bin/mdee --theme light --table-style box test.md
+
+  # 5. Test responsive column word-wrapping constrained to 80 columns
+  ./bin/mdee -w 80 test.md
+
+  # 6. View with line numbers on code blocks
+  ./bin/mdee -n test.md
+
+  # 7. Test plain scripting mode (suitable for grep/awk pipelines, ASCII diagrams)
+  ./bin/mdee --plain test.md | grep "Healthy"
+
+  # 8. View Mermaid diagrams rendered graphically (iTerm2 / Kitty)
+  ./bin/mdee test.md
+
+  # 9. View Mermaid diagrams with custom width (e.g. 70 columns or 100 columns)
+  ./bin/mdee --mermaid-width 70 test.md
+  ./bin/mdee --mermaid-width 100 test.md
+
+  # 10. View Mermaid diagrams with high-contrast background canvas
+  ./bin/mdee --mermaid-bg dark test.md
+  ./bin/mdee --mermaid-bg light test.md
+  ./bin/mdee --mermaid-bg "#1e1e2e" test.md
+  ./bin/mdee --mermaid-bg transparent test.md
+
+  # 11. View Mermaid diagrams with custom Retina/HiDPI scale factor
+  ./bin/mdee --mermaid-scale 2.5 test.md
+
+  # 12. View Mermaid diagrams with alternative color theme (e.g. neutral, forest, slate, blueprint)
+  ./bin/mdee --mermaid-theme neutral test.md
+  ./bin/mdee --mermaid-theme blueprint test.md
+
+  # 13. View Mermaid diagrams as ANSI / Unicode box-drawing art
+  ./bin/mdee --mermaid ansi test.md
+
+  # 14. View Mermaid diagrams as pure 7-bit ASCII diagrams
+  ./bin/mdee --mermaid ascii test.md
+
+  # 15. View raw syntax-highlighted Mermaid source code
+  ./bin/mdee --mermaid raw test.md
+
+  # 16. Run terminal diagnostic doctor check
+  ./bin/mdee doctor

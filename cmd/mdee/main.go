@@ -57,9 +57,11 @@ func newRootCmd() *cobra.Command {
 		Version: version,
 		Short:   "High-fidelity Markdown terminal viewer optimized for macOS iTerm2",
 		Long: `mdee is a production-grade terminal Markdown viewer written in Go.
-Specifically engineered for macOS iTerm2, it delivers accurate inline graphics
-using the iTerm2 OSC 1337 protocol, word-wrapped and auto-aligned tables with
-Unicode box borders, syntax-highlighted code blocks, and OSC 8 clickable hyperlinks.`,
+Specifically engineered for modern terminals (macOS iTerm2, Kitty, Ghostty, WezTerm),
+it delivers accurate inline graphics using iTerm2 OSC 1337 and Kitty protocols,
+graphical Mermaid diagram rendering with automated ANSI/ASCII fallback,
+word-wrapped and auto-aligned tables with Unicode box borders, syntax-highlighted
+code blocks, and OSC 8 clickable hyperlinks.`,
 		SilenceUsage: true,
 		Args:         cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -68,6 +70,13 @@ Unicode box borders, syntax-highlighted code blocks, and OSC 8 clickable hyperli
 			}
 			if noHyperlinks {
 				opts.Hyperlinks = false
+			}
+
+			switch strings.ToLower(strings.TrimSpace(opts.MermaidMode)) {
+			case "auto", "image", "graphical", "ansi", "unicode", "text", "ascii", "raw", "code", "":
+				// valid
+			default:
+				return fmt.Errorf("invalid mermaid mode %q (supported: auto, image, ansi, unicode, ascii, raw)", opts.MermaidMode)
 			}
 
 			ctx, cancel := context.WithCancel(cmd.Context())
@@ -84,6 +93,13 @@ Unicode box borders, syntax-highlighted code blocks, and OSC 8 clickable hyperli
 	flags.StringVarP(&opts.ImageMode, "images", "i", "auto", "Inline image mode: auto, always, never")
 	flags.StringVar(&opts.ImageWidth, "image-width", "auto", "Image width constraint: auto, 100%, 80, 400px")
 	flags.StringVar(&opts.ImageHeight, "image-height", "auto", "Image height constraint: auto, 20, 300px")
+	flags.StringVarP(&opts.MermaidMode, "mermaid", "m", "auto", "Mermaid render mode: auto, image, ansi, unicode, ascii, raw")
+	flags.StringVar(&opts.MermaidMode, "mermaid-mode", "auto", "Alias for --mermaid")
+	flags.StringVar(&opts.MermaidTheme, "mermaid-theme", "", "Mermaid diagram theme: dark, default, slate, blueprint, neon, neutral, forest")
+	flags.StringVar(&opts.MermaidWidth, "mermaid-width", "auto", "Mermaid image display width: auto, 100%, 80, 800px")
+	flags.StringVar(&opts.MermaidBg, "mermaid-bg", "auto", "Mermaid image background: auto, dark, light, transparent, or hex #RRGGBB")
+	flags.StringVar(&opts.MermaidBg, "mermaid-background", "auto", "Alias for --mermaid-bg")
+	flags.Float64Var(&opts.MermaidScale, "mermaid-scale", 2.0, "Mermaid image scale factor (1.0 - 4.0)")
 	flags.BoolVarP(&opts.LineNumbers, "line-numbers", "n", false, "Show line numbers in code blocks")
 	flags.BoolVar(&opts.Hyperlinks, "hyperlinks", true, "Enable OSC 8 terminal hyperlinks")
 	flags.BoolVar(&noHyperlinks, "no-hyperlinks", false, "Disable OSC 8 terminal hyperlinks")

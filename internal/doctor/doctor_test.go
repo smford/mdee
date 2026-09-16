@@ -16,4 +16,16 @@ func TestRunDiagnostics(t *testing.T) {
 	if !strings.Contains(report, "OSC 8") {
 		t.Errorf("expected OSC 8 check in report")
 	}
+	if !strings.Contains(report, "Mermaid Protocol") {
+		t.Errorf("expected Mermaid Protocol check in report")
+	}
+	if !strings.Contains(report, "Mermaid CLI") {
+		t.Errorf("expected Mermaid CLI check in report")
+	}
+	if !strings.Contains(report, "Mermaid Text Engine") {
+		t.Errorf("expected Mermaid Text Engine check in report")
+	}
+	if !strings.Contains(report, "Mermaid Diagram Rendering Test") {
+		t.Errorf("expected Mermaid Diagram Rendering Test in report")
+	}
 }

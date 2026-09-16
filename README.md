@@ -26,7 +26,18 @@ Designed through a Senior Site Reliability Engineering lens, `mdee` solves commo
 - **tmux Passthrough**: Transparently wraps image payloads in tmux DCS escape sequences (`\033Ptmux;...`) when running inside tmux sessions.
 - **Graceful Degradation**: Automatically falls back to formatted diagnostic placeholders on unsupported terminals or when `--images=never` is selected.
 
-### 2. High-Fidelity Table Layout Engine
+### 2. Native Mermaid Diagram Rendering & Cascading Fallback
+- **Embedded `golang-mermaid` Engine**: Uses [`github.com/smford/golang-mermaid`](https://github.com/smford/golang-mermaid) to render Mermaid diagrams (`flowchart`, `sequenceDiagram`, `stateDiagram`, etc.) directly in the terminal.
+- **Multi-Protocol Graphical Rendering**: Outputs inline images using iTerm2 OSC 1337, Kitty APC (`\033_G`), or DEC Sixel (`\033Pq`) graphics protocols.
+- **High-DPI Retina Resampling**: Upscales diagrams using Catmull-Rom bicubic filtering (`--mermaid-scale 2.0`) to eliminate blurry text on high-density displays.
+- **Background Contrast Compositing**: Automatically solves transparent PNG readability on dark/light terminal windows by compositing onto a high-contrast padded canvas (`#1e1e2e` for dark themes, `#ffffff` for light themes, or custom `#RRGGBB` via `--mermaid-bg`). Pass `--mermaid-bg transparent` for raw alpha.
+- **Responsive Terminal Column Sizing**: Computes proportional terminal cell widths (`--mermaid-width auto` or explicit columns like `-w 80`) to ensure diagrams render prominently rather than as unreadable thumbnails.
+- **Automated SRE Graceful Degradation**: When graphics protocols are not supported by the terminal, when piped or redirected, or when image generation is unreachable, it seamlessly cascades to high-fidelity Unicode box-drawing text art using `mmaid-go`.
+- **ANSI & 7-Bit ASCII Modes**: Supports explicit user rendering preferences via `--mermaid ansi`, `--mermaid unicode`, or `--mermaid ascii`.
+- **Scripting & Pipe Safety**: In `--plain` mode or when piped to non-interactive destinations, diagrams automatically render as pure 7-bit ASCII without ANSI escapes or binary sequences.
+- **Content-Addressed Caching**: Diagram renders are cached by SHA-256 hash to eliminate redundant processing and enable offline operation.
+
+### 3. High-Fidelity Table Layout Engine
 - **Strict Column Alignment**: Preserves Markdown syntax alignments (`:---` Left, `:---:` Center, `---:` Right) across headers and data rows.
 - **Unicode & Emoji Width Precision**: Calculates visual column boundaries using Unicode Standard Annex #29 / UAX #11 grapheme cluster metrics and ANSI stripping—eliminating jagged borders caused by emojis (`✅`, `⚠️`, `🚀`), variation selectors, or CJK glyphs.
 - **Intelligent Word-Wrapping**: When tables exceed the available terminal columns, columns are proportionally sized and wrapped cleanly at word boundaries instead of overflowing the screen.
@@ -37,15 +48,15 @@ Designed through a Senior Site Reliability Engineering lens, `mdee` solves commo
   <img src="assets/screenshots/tables-and-alignment.png" alt="High-Fidelity Tables and Alignment Engine" width="850" />
 </p>
 
-### 3. Syntax Highlighting & Code Blocks
+### 4. Syntax Highlighting & Code Blocks
 - **Chroma Syntax Highlighting**: Automatic language detection and theme matching (Dracula, Monokai, Solarized, GitHub).
 - **Framed Code Enclosures**: Code blocks are enclosed in rounded border cards with language tags.
 - **Line Numbers**: Toggle line numbers via `-n` / `--line-numbers`.
 
-### 4. Clickable OSC 8 Hyperlinks
+### 5. Clickable OSC 8 Hyperlinks
 - Terminal links render as native OSC 8 clickable hyperlinks in iTerm2—`Cmd+Click` on any link text to open the target URL directly in your browser.
 
-### 5. Production SRE Reliability
+### 6. Production SRE Reliability
 - **Safe Broken Pipes (`EPIPE`)**: Gracefully handles downstream pipe termination (e.g. `mdee doc.md | head -n 5`) without emitting runtime panics or broken pipe error traces.
 - **Interactive Pager**: Optionally pipe long output through `$PAGER` (defaulting to `less -R -F -X`) using the `--pager` flag.
 - **Plain Mode for Scripting**: Use `--plain` to strip all ANSI codes and borders, outputting clean plain text suitable for `grep`, `awk`, or saving to log files.
@@ -117,8 +128,26 @@ mdee -w 100 report.md
 # Show line numbers in code blocks
 mdee -n main.md
 
-# Plain text output (no ANSI escapes or colors)
+# Plain text output (no ANSI escapes or colors, ASCII diagrams)
 mdee --plain guide.md | grep "Configuration"
+
+# Render Mermaid diagrams graphically (auto-detects terminal protocol)
+mdee test.md
+
+# Force Mermaid rendering as ANSI / Unicode box-drawing art
+mdee --mermaid ansi test.md
+
+# Force Mermaid rendering as pure 7-bit ASCII diagrams
+mdee --mermaid ascii test.md
+
+# Display raw syntax-highlighted Mermaid source code
+mdee --mermaid raw test.md
+
+# View Mermaid image with custom width and high-contrast background
+mdee --mermaid-width 80 --mermaid-bg "#1e1e2e" test.md
+
+# View Mermaid image with clean white canvas card
+mdee --mermaid-bg white test.md
 ```
 
 ---
@@ -133,6 +162,11 @@ mdee --plain guide.md | grep "Configuration"
 | `--images` | `-i` | `"auto"` | Inline image mode: `auto` (iTerm2 only), `always`, `never` |
 | `--image-width` | | `"auto"` | Image width constraint: `auto`, `100%`, `80`, `400px` |
 | `--image-height`| | `"auto"` | Image height constraint: `auto`, `20`, `300px` |
+| `--mermaid` | `-m` | `"auto"` | Mermaid render mode: `auto`, `image`, `ansi`, `unicode`, `ascii`, `raw` |
+| `--mermaid-theme` | | `""` | Mermaid theme: `dark`, `default`, `slate`, `blueprint`, `neon`, `neutral`, `forest` |
+| `--mermaid-width` | | `"auto"` | Mermaid image display width: `auto` (smart responsive), `100%`, `80`, `800px` |
+| `--mermaid-bg`    | | `"auto"` | Mermaid image background canvas: `auto`, `dark`, `light`, `transparent`, `#RRGGBB` |
+| `--mermaid-scale` | | `2.0` | Mermaid image rasterization scale factor (`1.0` - `4.0` for Retina/HiDPI) |
 | `--line-numbers`| `-n` | `false` | Display line numbers in code blocks |
 | `--hyperlinks`  | | `true` | Enable OSC 8 clickable terminal hyperlinks |
 | `--no-hyperlinks`| | `false` | Disable OSC 8 clickable terminal hyperlinks (display full URLs) |
@@ -169,6 +203,9 @@ $ mdee doctor
 │ OSC 1337 (Inline Images) │ true              │ ENABLED                 │
 │ OSC 8 (Terminal Links)   │ true              │ ENABLED                 │
 │ TrueColor (24-bit)       │ true              │ ENABLED                 │
+│ Mermaid Protocol         │ iterm2            │ iTerm2 Graphics (OSC 1337)│
+│ Mermaid CLI (mmdc)       │ false             │ Not Found (Remote / Fallback) │
+│ Mermaid Text Engine      │ mmaid-go          │ READY (Pure-Go)         │
 ╰──────────────────────────┴───────────────────┴─────────────────────────╯
 
 ── Protocol Verification Test ──────────────────────────────────
@@ -176,6 +213,8 @@ $ mdee doctor
   • OSC 8 Hyperlink: Click here to test OSC 8 GitHub link
   • OSC 1337 Inline Image Test (32x32 color gradient swatch):
     [Inline graphic test rendered here]
+  • Mermaid Diagram Rendering Test (image mode, iterm2 protocol):
+    [Inline Mermaid diagram graphic rendered here]
 ```
 
 <p align="center">
@@ -213,7 +252,9 @@ If you run inside `tmux` within iTerm2, tmux blocks terminal escape sequences by
 │   ├── config/              # Runtime configuration defaults and types
 │   ├── doctor/              # SRE terminal diagnostics & capability probe
 │   ├── image/               # OSC 1337 encoder, fetcher, dimension parser
-│   ├── renderer/            # Goldmark AST terminal renderer & walker
+│   ├── renderer/            # Goldmark AST terminal renderer & Mermaid engine
+│   │   ├── renderer.go      # Markdown node visitor and inline element formatting
+│   │   └── mermaid.go       # Contrast canvas compositing, Catmull-Rom HiDPI scaling
 │   ├── table/               # Accurate table engine, Unicode grapheme wrapping, borders
 │   ├── term/                # iTerm2 detection, TTY size, OSC 8 links, pager
 │   └── theme/               # Color palettes and Lipgloss/Chroma style sheets

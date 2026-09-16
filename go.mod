@@ -7,6 +7,7 @@ require (
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/muesli/termenv v0.16.0
 	github.com/rivo/uniseg v0.4.7
+	github.com/smford/golang-mermaid v1.1.2
 	github.com/spf13/cobra v1.10.2
 	github.com/yuin/goldmark v1.8.6
 	golang.org/x/image v0.46.0
@@ -14,6 +15,7 @@ require (
 )
 
 require (
+	github.com/aaronsb/mmaid-go v0.6.0 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/colorprofile v0.2.3-0.20250311203215-f60798e515dc // indirect
 	github.com/charmbracelet/x/ansi v0.8.0 // indirect

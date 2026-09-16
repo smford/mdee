@@ -2,14 +2,17 @@ package doctor
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"image"
 	"image/color"
 	"image/png"
+	"os/exec"
 	"runtime"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	mermaid "github.com/smford/golang-mermaid"
 	imagePkg "github.com/smford/mdee/internal/image"
 	"github.com/smford/mdee/internal/table"
 	"github.com/smford/mdee/internal/term"
@@ -67,6 +70,30 @@ func RunDiagnostics() string {
 	envTable.AddRow("OSC 8 (Terminal Links)", fmt.Sprintf("%t", info.HasOSC8), formatBoolStatus(info.HasOSC8, okStyle, warnStyle))
 	envTable.AddRow("TrueColor (24-bit)", fmt.Sprintf("%t", info.HasTrueColor), formatBoolStatus(info.HasTrueColor, okStyle, warnStyle))
 
+	// Mermaid Engine Capabilities
+	mermaidProto := mermaid.DetectGraphicsProtocol(nil, true)
+	var mermaidStatus string
+	switch mermaidProto {
+	case mermaid.ProtocolKitty:
+		mermaidStatus = okStyle.Render("Kitty Graphics (APC)")
+	case mermaid.ProtocolITerm2:
+		mermaidStatus = okStyle.Render("iTerm2 Graphics (OSC 1337)")
+	case mermaid.ProtocolSixel:
+		mermaidStatus = okStyle.Render("DEC Sixel Bitmap (DCS)")
+	default:
+		mermaidStatus = infoStyle.Render("ANSI / Unicode Fallback")
+	}
+	envTable.AddRow("Mermaid Protocol", mermaidProto.String(), mermaidStatus)
+
+	hasMmdc := false
+	mmdcStatus := infoStyle.Render("Not Found (Remote / Text fallback)")
+	if _, err := exec.LookPath("mmdc"); err == nil {
+		hasMmdc = true
+		mmdcStatus = okStyle.Render("INSTALLED (Local CLI)")
+	}
+	envTable.AddRow("Mermaid CLI (mmdc)", fmt.Sprintf("%t", hasMmdc), mmdcStatus)
+	envTable.AddRow("Mermaid Text Engine", "mmaid-go", okStyle.Render("READY (Pure-Go)"))
+
 	sb.WriteString(envTable.Render())
 	sb.WriteString("\n\n")
 
@@ -95,6 +122,23 @@ func RunDiagnostics() string {
 		sb.WriteString("  • OSC 1337 Inline Image Test:\n")
 		sb.WriteString("    [Skipped: current terminal does not report iTerm2 OSC 1337 support]\n")
 		sb.WriteString("    (Use --images=always to force transmission if using a compatible emulator)\n\n")
+	}
+
+	// Test Mermaid diagram rendering
+	p := mermaid.New(
+		mermaid.WithMode(mermaid.ModeAuto),
+		mermaid.WithOffline(true),
+		mermaid.WithColumns(50),
+	)
+	mermaidRes, err := p.Render(context.Background(), "flowchart LR\n    Terminal --> Mermaid")
+	if err == nil && mermaidRes != nil {
+		sb.WriteString(fmt.Sprintf("  • Mermaid Diagram Rendering Test (%s mode, %s protocol):\n\n",
+			mermaidRes.Mode, mermaidRes.Protocol))
+		lines := strings.Split(strings.TrimRight(mermaidRes.Output, "\n"), "\n")
+		for _, line := range lines {
+			sb.WriteString("    " + line + "\n")
+		}
+		sb.WriteString("\n")
 	}
 
 	// 3. SRE Recommendations
