@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/rivo/uniseg"
+	mermaid "github.com/smford/golang-mermaid"
 )
 
 // Helper to generate a 2x2 PNG in memory
@@ -245,5 +246,73 @@ func TestFormatFallback(t *testing.T) {
 				t.Errorf("expected output to contain Image Error, got: %s", out)
 			}
 		})
+	}
+}
+
+func TestEnsurePNG(t *testing.T) {
+	pngData := generateTestPNG(t)
+	got, err := EnsurePNG(pngData)
+	if err != nil {
+		t.Fatalf("EnsurePNG failed on valid PNG: %v", err)
+	}
+	if !bytes.Equal(got, pngData) {
+		t.Errorf("EnsurePNG should return identical slice for PNG")
+	}
+
+	// Test with JPEG
+	img := image.NewRGBA(image.Rect(0, 0, 4, 4))
+	img.Set(0, 0, color.RGBA{R: 200, G: 50, B: 50, A: 255})
+	var jpgBuf bytes.Buffer
+	if err := png.Encode(&jpgBuf, img); err != nil {
+		t.Fatalf("failed encoding image: %v", err)
+	}
+	converted, err := EnsurePNG(jpgBuf.Bytes())
+	if err != nil {
+		t.Fatalf("EnsurePNG failed on image: %v", err)
+	}
+	if len(converted) == 0 {
+		t.Errorf("expected non-empty converted PNG")
+	}
+}
+
+func TestFormatTerminal(t *testing.T) {
+	pngData := generateTestPNG(t)
+
+	// 1. Kitty protocol
+	kittySeq, err := FormatTerminal(pngData, "test.png", mermaid.ProtocolKitty, TerminalOptions{
+		Width:  "60",
+		Height: "20",
+	})
+	if err != nil {
+		t.Fatalf("FormatTerminal for Kitty failed: %v", err)
+	}
+	if !strings.Contains(kittySeq, "\033_G") {
+		t.Errorf("expected Kitty APC escape sequence, got: %s", kittySeq)
+	}
+
+	// 2. iTerm2 protocol
+	itermSeq, err := FormatTerminal(pngData, "test.png", mermaid.ProtocolITerm2, TerminalOptions{
+		Width: "auto",
+	})
+	if err != nil {
+		t.Fatalf("FormatTerminal for iTerm2 failed: %v", err)
+	}
+	if !strings.Contains(itermSeq, "\x1b]1337;File=") {
+		t.Errorf("expected iTerm2 OSC 1337 escape sequence, got: %s", itermSeq)
+	}
+
+	// 3. Sixel protocol
+	sixelSeq, err := FormatTerminal(pngData, "test.png", mermaid.ProtocolSixel, TerminalOptions{})
+	if err != nil {
+		t.Fatalf("FormatTerminal for Sixel failed: %v", err)
+	}
+	if !strings.Contains(sixelSeq, "\033Pq") {
+		t.Errorf("expected Sixel DCS escape sequence, got: %s", sixelSeq)
+	}
+
+	// 4. Unsupported / None protocol returns error
+	_, err = FormatTerminal(pngData, "test.png", mermaid.ProtocolNone, TerminalOptions{})
+	if err == nil {
+		t.Errorf("expected error for ProtocolNone")
 	}
 }

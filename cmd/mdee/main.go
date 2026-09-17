@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	mermaid "github.com/smford/golang-mermaid"
 	"github.com/smford/mdee/internal/config"
 	"github.com/smford/mdee/internal/doctor"
 	"github.com/smford/mdee/internal/renderer"
@@ -50,19 +51,20 @@ func handleBrokenPipe() {
 func newRootCmd() *cobra.Command {
 	opts := config.DefaultOptions()
 	var (
-		noPager      bool
-		noHyperlinks bool
-		configFile   string
-		initConfig   bool
+		noPager          bool
+		noHyperlinks     bool
+		configFile       string
+		initConfig       bool
+		imageProtocolStr string
 	)
 
 	cmd := &cobra.Command{
 		Use:     "mdee [flags] [file | URL ...]",
 		Version: version,
-		Short:   "High-fidelity Markdown terminal viewer optimized for macOS iTerm2",
+		Short:   "High-fidelity Markdown terminal viewer for Kitty, Ghostty, WezTerm, iTerm2, and modern terminals",
 		Long: `mdee is a production-grade terminal Markdown viewer written in Go.
-Specifically engineered for modern terminals (macOS iTerm2, Kitty, Ghostty, WezTerm),
-it delivers accurate inline graphics using iTerm2 OSC 1337 and Kitty protocols,
+Specifically engineered for modern terminals (Kitty, Ghostty, WezTerm, iTerm2, Foot, mlterm, mintty, Linux & macOS),
+it delivers accurate inline graphics using Kitty (\033_G), iTerm2 OSC 1337, and DEC Sixel bitmap protocols,
 graphical Mermaid diagram rendering with automated ANSI/ASCII fallback,
 word-wrapped and auto-aligned tables with Unicode box borders, syntax-highlighted
 code blocks, and OSC 8 clickable hyperlinks.`,
@@ -120,6 +122,9 @@ code blocks, and OSC 8 clickable hyperlinks.`,
 				if !flags.Changed("image-height") {
 					opts.ImageHeight = fileOpts.ImageHeight
 				}
+				if !flags.Changed("image-protocol") {
+					opts.ImageProtocol = fileOpts.ImageProtocol
+				}
 				if !flags.Changed("mermaid") && !flags.Changed("mermaid-mode") {
 					opts.MermaidMode = fileOpts.MermaidMode
 				}
@@ -151,6 +156,23 @@ code blocks, and OSC 8 clickable hyperlinks.`,
 					opts.Debug = fileOpts.Debug
 				}
 				opts.ConfigFile = fileOpts.ConfigFile
+			}
+
+			if flags.Changed("image-protocol") {
+				switch strings.ToLower(strings.TrimSpace(imageProtocolStr)) {
+				case "auto", "":
+					opts.ImageProtocol = mermaid.ProtocolAuto
+				case "kitty":
+					opts.ImageProtocol = mermaid.ProtocolKitty
+				case "iterm2", "osc1337", "iterm":
+					opts.ImageProtocol = mermaid.ProtocolITerm2
+				case "sixel":
+					opts.ImageProtocol = mermaid.ProtocolSixel
+				case "none", "off", "disabled":
+					opts.ImageProtocol = mermaid.ProtocolNone
+				default:
+					return fmt.Errorf("invalid image protocol %q (supported: auto, kitty, iterm2, sixel, none)", imageProtocolStr)
+				}
 			}
 
 			if flags.Changed("no-pager") {
@@ -186,6 +208,7 @@ code blocks, and OSC 8 clickable hyperlinks.`,
 	flags.StringVarP(&opts.ImageMode, "images", "i", "auto", "Inline image mode: auto, always, never")
 	flags.StringVar(&opts.ImageWidth, "image-width", "auto", "Image width constraint: auto, 100%, 80, 400px")
 	flags.StringVar(&opts.ImageHeight, "image-height", "auto", "Image height constraint: auto, 20, 300px")
+	flags.StringVar(&imageProtocolStr, "image-protocol", "auto", "Image graphics protocol: auto, kitty, iterm2, sixel, none")
 	flags.StringVarP(&opts.MermaidMode, "mermaid", "m", "auto", "Mermaid render mode: auto, image, ansi, unicode, ascii, raw")
 	flags.StringVar(&opts.MermaidMode, "mermaid-mode", "auto", "Alias for --mermaid")
 	flags.StringVar(&opts.MermaidTheme, "mermaid-theme", "", "Mermaid diagram theme: dark, default, slate, blueprint, neon, neutral, forest")
@@ -259,7 +282,7 @@ func newDoctorCmd() *cobra.Command {
 	var configFile string
 	cmd := &cobra.Command{
 		Use:   "doctor",
-		Short: "Diagnose terminal environment, iTerm2 detection, protocol support, and configuration",
+		Short: "Diagnose terminal environment, emulator detection, graphics protocol support, and configuration",
 		Run: func(cmd *cobra.Command, args []string) {
 			report := doctor.RunDiagnostics(configFile)
 			fmt.Print(report)

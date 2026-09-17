@@ -67,3 +67,9 @@ You can test the application using any of the following commands in iTerm2:
 
   # 20. Generate default configuration file to custom path
   ./bin/mdee init --output /tmp/.mdeerc.test --force
+
+  # 21. Test explicit image protocol overrides
+  ./bin/mdee --images always --image-protocol kitty test.md
+  ./bin/mdee --images always --image-protocol iterm2 test.md
+  ./bin/mdee --images always --image-protocol sixel test.md
+  ./bin/mdee --images always --image-protocol none test.md

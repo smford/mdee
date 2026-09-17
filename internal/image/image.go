@@ -9,16 +9,18 @@ import (
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
-	_ "image/png"
+	"image/png"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/rivo/uniseg"
+	mermaid "github.com/smford/golang-mermaid"
 	_ "golang.org/x/image/webp"
 )
 
@@ -231,6 +233,83 @@ func FormatITerm2(data []byte, filename string, opts ITerm2Options) string {
 	}
 
 	return seq
+}
+
+// TerminalOptions configures inline image rendering across terminal graphics protocols.
+type TerminalOptions struct {
+	Protocol            mermaid.GraphicsProtocol // Target protocol (auto, iterm2, kitty, sixel, none)
+	Width               string                   // e.g. "auto", "100%", "80", "400px", "80cell"
+	Height              string                   // e.g. "auto", "20", "300px", "30cell"
+	PreserveAspectRatio bool                     // default true
+	InTmux              bool                     // wraps in tmux DCS passthrough
+}
+
+// EnsurePNG checks if image data is already in PNG format, and if not, decodes and converts it to PNG.
+func EnsurePNG(data []byte) ([]byte, error) {
+	if len(data) >= 8 && string(data[0:8]) == "\x89PNG\r\n\x1a\n" {
+		return data, nil
+	}
+	img, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("failed decoding image for PNG conversion: %w", err)
+	}
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, img); err != nil {
+		return nil, fmt.Errorf("failed encoding image to PNG: %w", err)
+	}
+	return buf.Bytes(), nil
+}
+
+// FormatKitty formats image data using the Kitty graphics protocol (APC \033_G).
+// Non-PNG images are automatically converted to PNG before encoding.
+func FormatKitty(data []byte, opts TerminalOptions) (string, error) {
+	pngBytes, err := EnsurePNG(data)
+	if err != nil {
+		return "", err
+	}
+
+	widthCols := 0
+	if opts.Width != "" && opts.Width != "auto" {
+		wClean := strings.TrimSuffix(opts.Width, "cell")
+		if n, err := strconv.Atoi(wClean); err == nil && n > 0 {
+			widthCols = n
+		}
+	}
+
+	heightRows := 0
+	if opts.Height != "" && opts.Height != "auto" {
+		hClean := strings.TrimSuffix(opts.Height, "cell")
+		if n, err := strconv.Atoi(hClean); err == nil && n > 0 {
+			heightRows = n
+		}
+	}
+
+	return mermaid.FormatKittyImage(pngBytes, widthCols, heightRows, opts.InTmux), nil
+}
+
+// FormatSixel formats image data using the DEC Sixel bitmap graphics protocol (DCS \033Pq).
+func FormatSixel(data []byte, opts TerminalOptions) (string, error) {
+	return mermaid.FormatSixelImage(data, opts.InTmux)
+}
+
+// FormatTerminal formats an image according to the specified GraphicsProtocol.
+func FormatTerminal(data []byte, filename string, proto mermaid.GraphicsProtocol, opts TerminalOptions) (string, error) {
+	switch proto {
+	case mermaid.ProtocolKitty:
+		return FormatKitty(data, opts)
+	case mermaid.ProtocolITerm2:
+		itermOpts := ITerm2Options{
+			Width:               opts.Width,
+			Height:              opts.Height,
+			PreserveAspectRatio: opts.PreserveAspectRatio,
+			InTmux:              opts.InTmux,
+		}
+		return FormatITerm2(data, filename, itermOpts), nil
+	case mermaid.ProtocolSixel:
+		return FormatSixel(data, opts)
+	default:
+		return "", fmt.Errorf("unsupported or disabled graphics protocol: %v", proto)
+	}
 }
 
 // formatFieldLines formats a prefixed field (e.g. "Source: ...") wrapping words to innerWidth,

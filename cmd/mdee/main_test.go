@@ -136,6 +136,36 @@ func TestCLIMermaidFlags(t *testing.T) {
 	})
 }
 
+func TestCLIImageProtocolFlags(t *testing.T) {
+	t.Run("valid image protocols", func(t *testing.T) {
+		protocols := []string{"auto", "kitty", "iterm2", "sixel", "none"}
+		for _, p := range protocols {
+			cmd := newRootCmd()
+			cmd.SetArgs([]string{"--image-protocol", p, "--version"})
+			var buf bytes.Buffer
+			cmd.SetOut(&buf)
+			if err := cmd.Execute(); err != nil {
+				t.Errorf("expected protocol %q to be accepted, got err: %v", p, err)
+			}
+		}
+	})
+
+	t.Run("invalid image protocol returns error", func(t *testing.T) {
+		cmd := newRootCmd()
+		cmd.SetArgs([]string{"--image-protocol", "invalid-proto", "testdata/demo.md"})
+		var buf bytes.Buffer
+		cmd.SetOut(&buf)
+		cmd.SetErr(&buf)
+		err := cmd.Execute()
+		if err == nil {
+			t.Errorf("expected error for invalid image protocol")
+		}
+		if !strings.Contains(err.Error(), "invalid image protocol") {
+			t.Errorf("expected 'invalid image protocol' in error message: %v", err)
+		}
+	})
+}
+
 func TestCLIConfigFile(t *testing.T) {
 	t.Run("explicit config file loads settings and can be overridden by flags", func(t *testing.T) {
 		tmpDir := t.TempDir()
@@ -145,6 +175,7 @@ theme: monokai
 table-style: box
 width: 75
 line-numbers: true
+image-protocol: kitty
 mermaid:
   mode: ascii
 `

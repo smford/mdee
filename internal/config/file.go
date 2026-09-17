@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	mermaid "github.com/smford/golang-mermaid"
 	"gopkg.in/yaml.v3"
 )
 
@@ -42,23 +43,25 @@ func ExpandPath(path string) string {
 
 // fileConfig mirrors configuration keys supported in ~/.mdeerc (YAML/JSON format).
 type fileConfig struct {
-	Width            *int               `yaml:"width" json:"width"`
-	Theme            *string            `yaml:"theme" json:"theme"`
-	TableStyle       *string            `yaml:"table-style" json:"table-style"`
-	TableStyleSnake  *string            `yaml:"table_style" json:"table_style"`
-	Images           *string            `yaml:"images" json:"images"`
-	ImageMode        *string            `yaml:"image-mode" json:"image-mode"`
-	ImageModeSnake   *string            `yaml:"image_mode" json:"image_mode"`
-	ImageWidth       *string            `yaml:"image-width" json:"image-width"`
-	ImageWidthSnake  *string            `yaml:"image_width" json:"image_width"`
-	ImageHeight      *string            `yaml:"image-height" json:"image-height"`
-	ImageHeightSnake *string            `yaml:"image_height" json:"image_height"`
-	LineNumbers      *bool              `yaml:"line-numbers" json:"line-numbers"`
-	LineNumbersSnake *bool              `yaml:"line_numbers" json:"line_numbers"`
-	Hyperlinks       *bool              `yaml:"hyperlinks" json:"hyperlinks"`
-	Pager            *bool              `yaml:"pager" json:"pager"`
-	Plain            *bool              `yaml:"plain" json:"plain"`
-	Debug            *bool              `yaml:"debug" json:"debug"`
+	Width              *int               `yaml:"width" json:"width"`
+	Theme              *string            `yaml:"theme" json:"theme"`
+	TableStyle         *string            `yaml:"table-style" json:"table-style"`
+	TableStyleSnake    *string            `yaml:"table_style" json:"table_style"`
+	Images             *string            `yaml:"images" json:"images"`
+	ImageMode          *string            `yaml:"image-mode" json:"image-mode"`
+	ImageModeSnake     *string            `yaml:"image_mode" json:"image_mode"`
+	ImageProtocol      *string            `yaml:"image-protocol" json:"image-protocol"`
+	ImageProtocolSnake *string            `yaml:"image_protocol" json:"image_protocol"`
+	ImageWidth         *string            `yaml:"image-width" json:"image-width"`
+	ImageWidthSnake    *string            `yaml:"image_width" json:"image_width"`
+	ImageHeight        *string            `yaml:"image-height" json:"image-height"`
+	ImageHeightSnake   *string            `yaml:"image_height" json:"image_height"`
+	LineNumbers        *bool              `yaml:"line-numbers" json:"line-numbers"`
+	LineNumbersSnake   *bool              `yaml:"line_numbers" json:"line_numbers"`
+	Hyperlinks         *bool              `yaml:"hyperlinks" json:"hyperlinks"`
+	Pager              *bool              `yaml:"pager" json:"pager"`
+	Plain              *bool              `yaml:"plain" json:"plain"`
+	Debug              *bool              `yaml:"debug" json:"debug"`
 
 	// Flat Mermaid options
 	MermaidMode            *string  `yaml:"mermaid-mode" json:"mermaid-mode"`
@@ -79,9 +82,10 @@ type fileConfig struct {
 }
 
 type imageSection struct {
-	Mode   *string `yaml:"mode" json:"mode"`
-	Width  *string `yaml:"width" json:"width"`
-	Height *string `yaml:"height" json:"height"`
+	Mode     *string `yaml:"mode" json:"mode"`
+	Protocol *string `yaml:"protocol" json:"protocol"`
+	Width    *string `yaml:"width" json:"width"`
+	Height   *string `yaml:"height" json:"height"`
 }
 
 type mermaidSection struct {
@@ -215,9 +219,24 @@ func ApplyConfigData(opts *Options, data []byte) error {
 		opts.ImageHeight = strings.TrimSpace(*fc.ImageHeightSnake)
 	}
 
+	if fc.ImageProtocol != nil {
+		if p, err := mermaid.ParseGraphicsProtocol(*fc.ImageProtocol); err == nil {
+			opts.ImageProtocol = p
+		}
+	} else if fc.ImageProtocolSnake != nil {
+		if p, err := mermaid.ParseGraphicsProtocol(*fc.ImageProtocolSnake); err == nil {
+			opts.ImageProtocol = p
+		}
+	}
+
 	if fc.ImageSection != nil {
 		if fc.ImageSection.Mode != nil {
 			opts.ImageMode = strings.TrimSpace(*fc.ImageSection.Mode)
+		}
+		if fc.ImageSection.Protocol != nil {
+			if p, err := mermaid.ParseGraphicsProtocol(*fc.ImageSection.Protocol); err == nil {
+				opts.ImageProtocol = p
+			}
 		}
 		if fc.ImageSection.Width != nil {
 			opts.ImageWidth = strings.TrimSpace(*fc.ImageSection.Width)
@@ -329,13 +348,15 @@ debug: false
 # Image Options
 # -----------------------------------------------------------------------------
 # Can be specified as flat options:
-#   images: "auto"        # auto (iTerm2 only), always, never
-#   image-width: "auto"   # auto, 100%, 80, 400px
-#   image-height: "auto"  # auto, 20, 300px
+#   images: "auto"           # auto, always, never
+#   image-protocol: "auto"   # auto (detects Kitty, iTerm2, Sixel), kitty, iterm2, sixel, none
+#   image-width: "auto"      # auto, 100%, 80, 400px
+#   image-height: "auto"     # auto, 20, 300px
 #
 # Or as a nested section:
 image:
   mode: "auto"
+  protocol: "auto"
   width: "auto"
   height: "auto"
 

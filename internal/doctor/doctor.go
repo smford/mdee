@@ -52,22 +52,54 @@ func RunDiagnostics(configPath ...string) string {
 	envTable.AddRow("TERM_PROGRAM", termProg, okStyle.Render("INFO"))
 	envTable.AddRow("TERM", info.TermName, okStyle.Render("INFO"))
 
-	// iTerm2 detection
-	itermStatus := okStyle.Render("DETECTED (macOS iTerm2)")
-	if !info.IsITerm2 {
-		itermStatus = warnStyle.Render("NOT DETECTED (Fallback mode active)")
+	// Terminal emulator detection
+	emulator := "Generic / Unknown"
+	if info.IsKitty {
+		emulator = "Kitty"
+	} else if info.IsGhostty {
+		emulator = "Ghostty"
+	} else if info.IsWezTerm {
+		emulator = "WezTerm"
+	} else if info.IsITerm2 {
+		emulator = "iTerm2"
+	} else if info.IsFoot {
+		emulator = "Foot"
+	} else if info.TermProgram != "" {
+		emulator = info.TermProgram
 	}
-	envTable.AddRow("iTerm2 Detection", fmt.Sprintf("%t", info.IsITerm2), itermStatus)
+	var emulatorStatus string
+	if info.HasGraphics {
+		emulatorStatus = okStyle.Render(fmt.Sprintf("DETECTED (%s graphics)", info.GraphicsProtocol))
+	} else {
+		emulatorStatus = infoStyle.Render("DETECTED (Unicode / Fallback)")
+	}
+	envTable.AddRow("Terminal Emulator", emulator, emulatorStatus)
 
 	// Tmux
 	tmuxStatus := infoStyle.Render("No")
 	if info.IsTmux {
-		tmuxStatus = warnStyle.Render("Active (DCS Passthrough required)")
+		tmuxStatus = warnStyle.Render("Active (Passthrough required)")
 	}
 	envTable.AddRow("Inside tmux Session", fmt.Sprintf("%t", info.IsTmux), tmuxStatus)
 
-	// Capabilities
-	envTable.AddRow("OSC 1337 (Inline Images)", fmt.Sprintf("%t", info.HasOSC1337), formatBoolStatus(info.HasOSC1337, okStyle, warnStyle))
+	// Active Graphics Protocol
+	var activeProtoStatus string
+	switch info.GraphicsProtocol {
+	case mermaid.ProtocolKitty:
+		activeProtoStatus = okStyle.Render("Kitty Graphics (APC)")
+	case mermaid.ProtocolITerm2:
+		activeProtoStatus = okStyle.Render("iTerm2 Graphics (OSC 1337)")
+	case mermaid.ProtocolSixel:
+		activeProtoStatus = okStyle.Render("DEC Sixel Bitmap (DCS)")
+	default:
+		activeProtoStatus = infoStyle.Render("ANSI / Unicode Fallback")
+	}
+	envTable.AddRow("Active Graphics Protocol", info.GraphicsProtocol.String(), activeProtoStatus)
+
+	// Protocol Capabilities
+	envTable.AddRow("Kitty Graphics (APC)", fmt.Sprintf("%t", info.HasKittyGraphics), formatBoolStatus(info.HasKittyGraphics, okStyle, warnStyle))
+	envTable.AddRow("OSC 1337 (iTerm2 Graphics)", fmt.Sprintf("%t", info.HasOSC1337), formatBoolStatus(info.HasOSC1337, okStyle, warnStyle))
+	envTable.AddRow("DEC Sixel Graphics (DCS)", fmt.Sprintf("%t", info.HasSixel), formatBoolStatus(info.HasSixel, okStyle, warnStyle))
 	envTable.AddRow("OSC 8 (Terminal Links)", fmt.Sprintf("%t", info.HasOSC8), formatBoolStatus(info.HasOSC8, okStyle, warnStyle))
 	envTable.AddRow("TrueColor (24-bit)", fmt.Sprintf("%t", info.HasTrueColor), formatBoolStatus(info.HasTrueColor, okStyle, warnStyle))
 
@@ -131,22 +163,26 @@ func RunDiagnostics(configPath ...string) string {
 
 	// Test inline image (mini 32x32 color swatch)
 	testPNG := generateSwatchPNG()
-	opts := imagePkg.ITerm2Options{
+	termOpts := imagePkg.TerminalOptions{
 		Width:               "16",
 		Height:              "auto",
 		PreserveAspectRatio: true,
 		InTmux:              info.IsTmux,
 	}
 
-	if info.HasOSC1337 {
-		imgSeq := imagePkg.FormatITerm2(testPNG, "doctor_test.png", opts)
-		sb.WriteString("  • OSC 1337 Inline Image Test (32x32 color gradient swatch):\n\n")
-		sb.WriteString("    " + imgSeq + "\n\n")
-		sb.WriteString("    (If you see a square gradient above, iTerm2 inline graphics are working!)\n\n")
+	if info.HasGraphics && info.GraphicsProtocol != mermaid.ProtocolNone {
+		imgSeq, err := imagePkg.FormatTerminal(testPNG, "doctor_test.png", info.GraphicsProtocol, termOpts)
+		if err == nil {
+			sb.WriteString(fmt.Sprintf("  • Inline Image Test (%s protocol, 32x32 color gradient swatch):\n\n", info.GraphicsProtocol))
+			sb.WriteString("    " + imgSeq + "\n\n")
+			sb.WriteString(fmt.Sprintf("    (If you see a square gradient above, %s inline graphics are working!)\n\n", info.GraphicsProtocol))
+		} else {
+			sb.WriteString(fmt.Sprintf("  • Inline Image Test (%s protocol): [Failed to encode: %v]\n\n", info.GraphicsProtocol, err))
+		}
 	} else {
-		sb.WriteString("  • OSC 1337 Inline Image Test:\n")
-		sb.WriteString("    [Skipped: current terminal does not report iTerm2 OSC 1337 support]\n")
-		sb.WriteString("    (Use --images=always to force transmission if using a compatible emulator)\n\n")
+		sb.WriteString("  • Inline Image Test (OSC 1337 / Kitty / Sixel):\n")
+		sb.WriteString("    [Skipped: current terminal does not report inline graphics support (OSC 1337, Kitty APC, or Sixel)]\n")
+		sb.WriteString("    (Use --images=always and --image-protocol=<proto> to force transmission)\n\n")
 	}
 
 	// Test Mermaid diagram rendering
@@ -168,8 +204,8 @@ func RunDiagnostics(configPath ...string) string {
 
 	// 3. SRE Recommendations
 	if info.IsTmux {
-		sb.WriteString(titleStyle.Render("── SRE Recommendations for tmux + iTerm2 ────────────────────────") + "\n\n")
-		sb.WriteString("  1. To allow iTerm2 images inside tmux, ensure your ~/.tmux.conf has:\n")
+		sb.WriteString(titleStyle.Render("── SRE Recommendations for tmux ────────────────────────────────") + "\n\n")
+		sb.WriteString("  1. To allow inline graphics (Kitty, iTerm2, Sixel) inside tmux, ensure your ~/.tmux.conf has:\n")
 		sb.WriteString(infoStyle.Render("     set -g allow-passthrough on") + "\n")
 		sb.WriteString("  2. Reload tmux config with:\n")
 		sb.WriteString(infoStyle.Render("     tmux source-file ~/.tmux.conf") + "\n\n")

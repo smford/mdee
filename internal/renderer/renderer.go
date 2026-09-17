@@ -670,16 +670,30 @@ func (s *renderState) renderImage(img *gast.Image) string {
 	altText := s.extractText(img)
 	title := string(img.Title)
 
+	targetProto := s.renderer.opts.ImageProtocol
+	if targetProto == mermaid.ProtocolAuto {
+		targetProto = s.renderer.termInfo.GraphicsProtocol
+	}
+
 	shouldRender := false
 	switch s.renderer.opts.ImageMode {
 	case "always":
-		shouldRender = true
+		if targetProto == mermaid.ProtocolNone {
+			if s.renderer.opts.ImageProtocol == mermaid.ProtocolNone {
+				shouldRender = false
+			} else {
+				shouldRender = true
+				targetProto = mermaid.ProtocolITerm2
+			}
+		} else {
+			shouldRender = true
+		}
 	case "never":
 		shouldRender = false
 	case "auto":
 		fallthrough
 	default:
-		shouldRender = s.renderer.termInfo.IsITerm2 || s.renderer.termInfo.HasOSC1337
+		shouldRender = s.renderer.termInfo.IsTTY && targetProto != mermaid.ProtocolNone
 	}
 
 	if shouldRender {
@@ -688,14 +702,21 @@ func (s *renderState) renderImage(img *gast.Image) string {
 			return image.FormatFallback(altText, dest, err.Error(), s.width())
 		}
 
-		opts := image.ITerm2Options{
+		opts := image.TerminalOptions{
+			Protocol:            targetProto,
 			Width:               s.renderer.opts.ImageWidth,
 			Height:              s.renderer.opts.ImageHeight,
 			PreserveAspectRatio: true,
 			InTmux:              s.renderer.termInfo.IsTmux,
 		}
 
-		seq := image.FormatITerm2(data, filename, opts)
+		seq, err := image.FormatTerminal(data, filename, targetProto, opts)
+		if err != nil {
+			if s.renderer.opts.Debug {
+				fmt.Fprintf(os.Stderr, "[DEBUG] Image formatting failed: %v\n", err)
+			}
+			return image.FormatFallback(altText, dest, err.Error(), s.width())
+		}
 
 		caption := altText
 		if caption == "" {
