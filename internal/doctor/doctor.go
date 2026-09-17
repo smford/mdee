@@ -98,7 +98,7 @@ func RunDiagnostics(configPath ...string) string {
 
 	// Protocol Capabilities
 	envTable.AddRow("Kitty Graphics (APC)", fmt.Sprintf("%t", info.HasKittyGraphics), formatBoolStatus(info.HasKittyGraphics, okStyle, warnStyle))
-	envTable.AddRow("iTerm2 Graphics (OSC 1337)", fmt.Sprintf("%t", info.HasOSC1337), formatBoolStatus(info.HasOSC1337, okStyle, warnStyle))
+	envTable.AddRow("OSC 1337 (iTerm2 Graphics)", fmt.Sprintf("%t", info.HasOSC1337), formatBoolStatus(info.HasOSC1337, okStyle, warnStyle))
 	envTable.AddRow("DEC Sixel Graphics (DCS)", fmt.Sprintf("%t", info.HasSixel), formatBoolStatus(info.HasSixel, okStyle, warnStyle))
 	envTable.AddRow("OSC 8 (Terminal Links)", fmt.Sprintf("%t", info.HasOSC8), formatBoolStatus(info.HasOSC8, okStyle, warnStyle))
 	envTable.AddRow("TrueColor (24-bit)", fmt.Sprintf("%t", info.HasTrueColor), formatBoolStatus(info.HasTrueColor, okStyle, warnStyle))
@@ -180,8 +180,8 @@ func RunDiagnostics(configPath ...string) string {
 			sb.WriteString(fmt.Sprintf("  • Inline Image Test (%s protocol): [Failed to encode: %v]\n\n", info.GraphicsProtocol, err))
 		}
 	} else {
-		sb.WriteString("  • Inline Image Test:\n")
-		sb.WriteString("    [Skipped: current terminal does not report inline graphics support]\n")
+		sb.WriteString("  • Inline Image Test (OSC 1337 / Kitty / Sixel):\n")
+		sb.WriteString("    [Skipped: current terminal does not report inline graphics support (OSC 1337, Kitty APC, or Sixel)]\n")
 		sb.WriteString("    (Use --images=always and --image-protocol=<proto> to force transmission)\n\n")
 	}
 

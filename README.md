@@ -323,7 +323,7 @@ $ mdee doctor
 │ Inside tmux Session      │ false             │ No                      │
 │ Active Graphics Protocol │ iterm2            │ iTerm2 Graphics (OSC 1337)│
 │ Kitty Graphics (APC)     │ false             │ DISABLED                │
-│ iTerm2 Graphics (OSC 1337)│ true             │ ENABLED                 │
+│ OSC 1337 (iTerm2 Graphics)│ true             │ ENABLED                 │
 │ DEC Sixel Graphics (DCS) │ false             │ DISABLED                │
 │ OSC 8 (Terminal Links)   │ true              │ ENABLED                 │
 │ TrueColor (24-bit)       │ true              │ ENABLED                 │
