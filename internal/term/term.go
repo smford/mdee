@@ -7,21 +7,30 @@ import (
 	"os/exec"
 	"strings"
 
+	mermaid "github.com/smford/golang-mermaid"
 	"golang.org/x/term"
 )
 
-// Info holds detected terminal capabilities.
+// Info holds detected terminal capabilities matching smford/golang-mermaid.
 type Info struct {
-	IsTTY        bool
-	Width        int
-	Height       int
-	IsITerm2     bool
-	IsTmux       bool
-	TermProgram  string
-	TermName     string
-	HasTrueColor bool
-	HasOSC8      bool
-	HasOSC1337   bool
+	IsTTY            bool
+	Width            int
+	Height           int
+	IsITerm2         bool
+	IsKitty          bool
+	IsGhostty        bool
+	IsWezTerm        bool
+	IsFoot           bool
+	IsTmux           bool
+	TermProgram      string
+	TermName         string
+	HasTrueColor     bool
+	HasOSC8          bool
+	HasOSC1337       bool
+	HasKittyGraphics bool
+	HasSixel         bool
+	GraphicsProtocol mermaid.GraphicsProtocol
+	HasGraphics      bool
 }
 
 // IsTerminal checks if the provided file descriptor is connected to a terminal.
@@ -63,46 +72,62 @@ func Detect() Info {
 
 	isTmux := tmuxEnv != "" || strings.HasPrefix(termName, "tmux") || strings.HasPrefix(termName, "screen")
 
-	// Detect iTerm2 directly or when running inside tmux launched from iTerm2
-	isITerm := termProgram == "iTerm.app" ||
-		lcTerminal == "iTerm2" ||
-		itermSession != ""
-
-	// If inside tmux, TERM_PROGRAM might not be set unless passthrough is enabled,
-	// but ITERM_SESSION_ID or LC_TERMINAL often propagates.
+	// Terminal identification
+	isITerm := mermaid.IsITerm2()
 	if !isITerm && isTmux {
 		if itermSession != "" || lcTerminal == "iTerm2" {
 			isITerm = true
 		}
 	}
 
-	// WezTerm also supports OSC 1337 (iTerm2 image protocol)
-	supportsOSC1337 := isITerm || termProgram == "WezTerm"
+	normProg := strings.ToLower(termProgram)
+	normTerm := strings.ToLower(termName)
+
+	isKitty := os.Getenv("KITTY_WINDOW_ID") != "" || strings.Contains(normTerm, "kitty")
+	isGhostty := normProg == "ghostty"
+	isWezTerm := normProg == "wezterm"
+	isFoot := normTerm == "foot"
+
+	// Protocol capabilities matching smford/golang-mermaid
+	hasKittyGraphics := mermaid.SupportsGraphicsProtocol(nil, mermaid.ProtocolKitty, true)
+	hasOSC1337 := mermaid.SupportsGraphicsProtocol(nil, mermaid.ProtocolITerm2, true)
+	hasSixel := mermaid.SupportsGraphicsProtocol(nil, mermaid.ProtocolSixel, true)
+	graphicsProto := mermaid.DetectGraphicsProtocol(nil, true)
 
 	// Modern terminals supporting OSC 8 hyperlinks (excluding tmux and Apple_Terminal which leak OSC 8 sequences)
 	supportsOSC8 := !isTmux && (isITerm ||
-		termProgram == "WezTerm" ||
-		termProgram == "vscode" ||
-		termProgram == "ghostty" ||
+		isWezTerm ||
+		isGhostty ||
+		isKitty ||
+		normProg == "vscode" ||
 		os.Getenv("VTE_VERSION") != "" ||
-		strings.Contains(termName, "kitty") ||
-		strings.Contains(termName, "alacritty"))
+		strings.Contains(normTerm, "alacritty"))
 
 	// Truecolor detection
 	colorTerm := os.Getenv("COLORTERM")
-	hasTrueColor := colorTerm == "truecolor" || colorTerm == "24bit" || isITerm || termProgram == "ghostty" || termProgram == "WezTerm"
+	hasTrueColor := colorTerm == "truecolor" || colorTerm == "24bit" || isITerm || isGhostty || isWezTerm || isKitty
+
+	hasGraphics := isTTY && (graphicsProto != mermaid.ProtocolNone)
 
 	return Info{
-		IsTTY:        isTTY,
-		Width:        w,
-		Height:       h,
-		IsITerm2:     isITerm,
-		IsTmux:       isTmux,
-		TermProgram:  termProgram,
-		TermName:     termName,
-		HasTrueColor: hasTrueColor,
-		HasOSC8:      supportsOSC8,
-		HasOSC1337:   supportsOSC1337,
+		IsTTY:            isTTY,
+		Width:            w,
+		Height:           h,
+		IsITerm2:         isITerm,
+		IsKitty:          isKitty,
+		IsGhostty:        isGhostty,
+		IsWezTerm:        isWezTerm,
+		IsFoot:           isFoot,
+		IsTmux:           isTmux,
+		TermProgram:      termProgram,
+		TermName:         termName,
+		HasTrueColor:     hasTrueColor,
+		HasOSC8:          supportsOSC8,
+		HasOSC1337:       hasOSC1337,
+		HasKittyGraphics: hasKittyGraphics,
+		HasSixel:         hasSixel,
+		GraphicsProtocol: graphicsProto,
+		HasGraphics:      hasGraphics,
 	}
 }
 

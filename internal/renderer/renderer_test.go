@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
+	mermaid "github.com/smford/golang-mermaid"
 	"github.com/smford/mdee/internal/config"
 	"github.com/smford/mdee/internal/table"
 )
@@ -98,19 +99,92 @@ func TestRenderer_Table(t *testing.T) {
 }
 
 func TestRenderer_Image(t *testing.T) {
-	opts := config.DefaultOptions()
-	opts.ImageMode = "never" // Fallback box
-	r := New(opts)
+	t.Run("never mode outputs fallback box", func(t *testing.T) {
+		opts := config.DefaultOptions()
+		opts.ImageMode = "never" // Fallback box
+		r := New(opts)
 
-	doc := `![Architecture Diagram](https://example.com/arch.png "Arch")`
-	out, err := r.Render(context.Background(), []byte(doc))
-	if err != nil {
-		t.Fatalf("Render image failed: %v", err)
-	}
+		doc := `![Architecture Diagram](https://example.com/arch.png "Arch")`
+		out, err := r.Render(context.Background(), []byte(doc))
+		if err != nil {
+			t.Fatalf("Render image failed: %v", err)
+		}
 
-	if !strings.Contains(out, "Architecture Diagram") || !strings.Contains(out, "https://example.com/arch.png") {
-		t.Errorf("expected image fallback box in output: %s", out)
-	}
+		if !strings.Contains(out, "Architecture Diagram") || !strings.Contains(out, "https://example.com/arch.png") {
+			t.Errorf("expected image fallback box in output: %s", out)
+		}
+	})
+
+	t.Run("always mode with kitty protocol", func(t *testing.T) {
+		opts := config.DefaultOptions()
+		opts.ImageMode = "always"
+		opts.ImageProtocol = mermaid.ProtocolKitty
+		r := New(opts)
+
+		doc := `![Sample Image](../../testdata/sample.png)`
+		out, err := r.Render(context.Background(), []byte(doc))
+		if err != nil {
+			t.Fatalf("Render image failed: %v", err)
+		}
+
+		// Kitty graphics sequence starts with \x1b_G
+		if !strings.Contains(out, "\x1b_G") {
+			t.Errorf("expected Kitty APC graphics escape sequence in output, got: %q", out)
+		}
+	})
+
+	t.Run("always mode with iterm2 protocol", func(t *testing.T) {
+		opts := config.DefaultOptions()
+		opts.ImageMode = "always"
+		opts.ImageProtocol = mermaid.ProtocolITerm2
+		r := New(opts)
+
+		doc := `![Sample Image](../../testdata/sample.png)`
+		out, err := r.Render(context.Background(), []byte(doc))
+		if err != nil {
+			t.Fatalf("Render image failed: %v", err)
+		}
+
+		// iTerm2 sequence starts with \x1b]1337;File=
+		if !strings.Contains(out, "\x1b]1337;File=") {
+			t.Errorf("expected iTerm2 OSC 1337 escape sequence in output, got: %q", out)
+		}
+	})
+
+	t.Run("always mode with sixel protocol", func(t *testing.T) {
+		opts := config.DefaultOptions()
+		opts.ImageMode = "always"
+		opts.ImageProtocol = mermaid.ProtocolSixel
+		r := New(opts)
+
+		doc := `![Sample Image](../../testdata/sample.png)`
+		out, err := r.Render(context.Background(), []byte(doc))
+		if err != nil {
+			t.Fatalf("Render image failed: %v", err)
+		}
+
+		// Sixel sequence starts with \x1bPq
+		if !strings.Contains(out, "\x1bPq") {
+			t.Errorf("expected Sixel DCS escape sequence in output, got: %q", out)
+		}
+	})
+
+	t.Run("always mode with protocol none falls back to box", func(t *testing.T) {
+		opts := config.DefaultOptions()
+		opts.ImageMode = "always"
+		opts.ImageProtocol = mermaid.ProtocolNone
+		r := New(opts)
+
+		doc := `![Sample Image](../../testdata/sample.png)`
+		out, err := r.Render(context.Background(), []byte(doc))
+		if err != nil {
+			t.Fatalf("Render image failed: %v", err)
+		}
+
+		if !strings.Contains(out, "Sample Image") || !strings.Contains(out, "sample.png") {
+			t.Errorf("expected fallback box when protocol is none, got: %q", out)
+		}
+	})
 }
 
 func TestRenderer_Plain(t *testing.T) {

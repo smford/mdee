@@ -6,23 +6,78 @@ import (
 )
 
 func TestDetect(t *testing.T) {
-	// Set dummy env
-	os.Setenv("TERM_PROGRAM", "iTerm.app")
-	defer os.Unsetenv("TERM_PROGRAM")
+	t.Run("iTerm2 detection", func(t *testing.T) {
+		os.Setenv("TERM_PROGRAM", "iTerm.app")
+		defer os.Unsetenv("TERM_PROGRAM")
 
-	info := Detect()
-	if !info.IsITerm2 {
-		t.Errorf("expected IsITerm2 to be true when TERM_PROGRAM=iTerm.app")
-	}
-	if !info.HasOSC1337 {
-		t.Errorf("expected HasOSC1337 to be true for iTerm2")
-	}
-	if !info.HasOSC8 {
-		t.Errorf("expected HasOSC8 to be true for iTerm2")
-	}
-	if info.Width <= 0 {
-		t.Errorf("expected positive width, got %d", info.Width)
-	}
+		info := Detect()
+		if !info.IsITerm2 {
+			t.Errorf("expected IsITerm2 to be true when TERM_PROGRAM=iTerm.app")
+		}
+		if !info.HasOSC1337 {
+			t.Errorf("expected HasOSC1337 to be true for iTerm2")
+		}
+		if !info.HasOSC8 {
+			t.Errorf("expected HasOSC8 to be true for iTerm2")
+		}
+		if info.Width <= 0 {
+			t.Errorf("expected positive width, got %d", info.Width)
+		}
+	})
+
+	t.Run("Kitty detection", func(t *testing.T) {
+		os.Setenv("TERM", "xterm-kitty")
+		os.Setenv("KITTY_WINDOW_ID", "1")
+		defer os.Unsetenv("TERM")
+		defer os.Unsetenv("KITTY_WINDOW_ID")
+
+		info := Detect()
+		if !info.IsKitty {
+			t.Errorf("expected IsKitty to be true")
+		}
+		if !info.HasKittyGraphics {
+			t.Errorf("expected HasKittyGraphics to be true")
+		}
+	})
+
+	t.Run("Ghostty detection", func(t *testing.T) {
+		os.Setenv("TERM_PROGRAM", "ghostty")
+		defer os.Unsetenv("TERM_PROGRAM")
+
+		info := Detect()
+		if !info.IsGhostty {
+			t.Errorf("expected IsGhostty to be true")
+		}
+		if !info.HasKittyGraphics {
+			t.Errorf("expected HasKittyGraphics to be true for Ghostty")
+		}
+	})
+
+	t.Run("WezTerm detection", func(t *testing.T) {
+		os.Setenv("TERM_PROGRAM", "WezTerm")
+		defer os.Unsetenv("TERM_PROGRAM")
+
+		info := Detect()
+		if !info.IsWezTerm {
+			t.Errorf("expected IsWezTerm to be true")
+		}
+		if !info.HasOSC1337 {
+			t.Errorf("expected HasOSC1337 to be true for WezTerm")
+		}
+	})
+
+	t.Run("Foot sixel detection", func(t *testing.T) {
+		os.Setenv("TERM", "foot")
+		defer os.Unsetenv("TERM")
+
+		info := Detect()
+		if !info.IsFoot {
+			t.Errorf("expected IsFoot to be true")
+		}
+		if !info.HasSixel {
+			t.Errorf("expected HasSixel to be true for Foot")
+		}
+	})
 }
 
 func TestFormatHyperlink(t *testing.T) {

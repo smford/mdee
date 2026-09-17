@@ -1,13 +1,18 @@
 package config
 
+import (
+	mermaid "github.com/smford/golang-mermaid"
+)
+
 // Options defines runtime rendering configuration.
 type Options struct {
-	Width       int    // Available width (0 means auto-detect terminal width)
-	Theme       string // Color theme name (dark, light, dracula, monokai, solarized-dark, solarized-light, plain)
-	TableStyle  string // Border style: rounded, box, double, ascii, markdown, minimal
-	ImageMode   string // "auto", "always", "never"
-	ImageWidth  string // "auto", "100%", "80", "400px"
-	ImageHeight string // "auto", "20", "300px"
+	Width         int                      // Available width (0 means auto-detect terminal width)
+	Theme         string                   // Color theme name (dark, light, dracula, monokai, solarized-dark, solarized-light, plain)
+	TableStyle    string                   // Border style: rounded, box, double, ascii, markdown, minimal
+	ImageMode     string                   // "auto", "always", "never"
+	ImageProtocol mermaid.GraphicsProtocol // "auto", "kitty", "iterm2", "sixel", "none"
+	ImageWidth    string                   // "auto", "100%", "80", "400px"
+	ImageHeight   string                   // "auto", "20", "300px"
 	LineNumbers bool   // Display line numbers in code blocks
 	Hyperlinks  bool   // Enable OSC 8 clickable terminal hyperlinks
 	Pager       bool   // Enable pager for long output in interactive TTY
@@ -27,9 +32,10 @@ func DefaultOptions() Options {
 	return Options{
 		Width:        0,
 		Theme:        "dark",
-		TableStyle:   "rounded",
-		ImageMode:    "auto",
-		ImageWidth:   "auto",
+		TableStyle:    "rounded",
+		ImageMode:     "auto",
+		ImageProtocol: mermaid.ProtocolAuto,
+		ImageWidth:    "auto",
 		ImageHeight:  "auto",
 		LineNumbers:  false,
 		Hyperlinks:   true,

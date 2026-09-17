@@ -40,13 +40,15 @@ debug: false
 # Image Options
 # -----------------------------------------------------------------------------
 # Can be specified as flat options:
-#   images: "auto"        # auto (iTerm2 only), always, never
-#   image-width: "auto"   # auto, 100%, 80, 400px
-#   image-height: "auto"  # auto, 20, 300px
+#   images: "auto"           # auto, always, never
+#   image-protocol: "auto"   # auto (detects Kitty, iTerm2, Sixel), kitty, iterm2, sixel, none
+#   image-width: "auto"      # auto, 100%, 80, 400px
+#   image-height: "auto"     # auto, 20, 300px
 #
 # Or as a nested section:
 image:
   mode: "auto"
+  protocol: "auto"
   width: "auto"
   height: "auto"
 

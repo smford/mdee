@@ -1,17 +1,17 @@
 ---
-title: "iTerm2 Markdown Viewer Validation Suite"
+title: "Terminal Markdown Viewer Validation Suite"
 author: "Site Reliability Engineering Team"
-date: "2026-09-13"
-version: "1.0.0"
+date: "2026-09-17"
+version: "1.6.0"
 status: "Ready for Validation"
 ---
 
 # `mdee` Terminal Viewer: Comprehensive Validation Suite
 
-Welcome to the **`mdee`** test suite! This document is designed to thoroughly exercise all features of the terminal Markdown viewer in macOS **iTerm2**, validating:
+Welcome to the **`mdee`** test suite! This document is designed to thoroughly exercise all features of the terminal Markdown viewer across modern terminal emulators (**Kitty**, **Ghostty**, **WezTerm**, **iTerm2**, **Foot**, etc.), validating:
 
 1. **Table alignment, width calculations, and word wrapping**
-2. **Inline iTerm2 graphics (OSC 1337) and fallback modes**
+2. **Multi-protocol inline graphics (Kitty, iTerm2 OSC 1337, Sixel) and fallback modes**
 3. **Syntax highlighting in multiple programming languages**
 4. **Interactive terminal features (OSC 8 hyperlinks, pager, themes)**
 5. **Native Mermaid diagram rendering (graphical, Unicode ANSI, and pure ASCII)**
@@ -68,7 +68,7 @@ When terminal columns are restricted or content is long, the table engine must p
 
 ---
 
-## 2. iTerm2 Inline Image Protocol (OSC 1337)
+## 2. Multi-Protocol Inline Image Rendering (Kitty, iTerm2, Sixel)
 
 ### 2.1 Local Relative Image
 
@@ -76,7 +76,7 @@ The image below is resolved relative to this Markdown file (`testdata/sample.png
 
 ![SRE Telemetry Sample Chart](testdata/sample.png "SRE Telemetry Dashboard")
 
-*Figure 1: Telemetry bar chart rendered directly into the terminal window via iTerm2 OSC 1337.*
+*Figure 1: Telemetry bar chart rendered directly into the terminal window via Kitty APC, iTerm2 OSC 1337, or DEC Sixel.*
 
 ### 2.2 Remote Image Streaming
 
@@ -91,9 +91,10 @@ This tests graceful degradation when an image source cannot be resolved:
 ![Missing Asset Test](./assets/does-not-exist-for-testing.png "Non-existent File")
 
 > **Verification Check**:
-> - In **iTerm2**, Figure 1 should display as an inline graphic.
+> - In compatible terminals (**Kitty**, **Ghostty**, **WezTerm**, **iTerm2**, **Foot**), Figure 1 should display as an inline graphic.
 > - The missing asset above should render an elegant warning box rather than aborting or crashing.
-> - Run with `--images=never` to view ASCII/Unicode placeholder cards for all images.
+> - Run with `--images=never` or `--image-protocol=none` to view ASCII/Unicode placeholder cards for all images.
+> - Test protocol overrides: `--image-protocol kitty`, `--image-protocol iterm2`, `--image-protocol sixel`.
 
 ---
 
@@ -341,4 +342,10 @@ cat test.md | ./bin/mdee --plain | head -n 25
 
 # 16. Generate default configuration file to custom path
 ./bin/mdee init --output /tmp/.mdeerc.test --force
+
+# 17. Test explicit image protocol overrides
+./bin/mdee --images always --image-protocol kitty test.md
+./bin/mdee --images always --image-protocol iterm2 test.md
+./bin/mdee --images always --image-protocol sixel test.md
+./bin/mdee --images always --image-protocol none test.md
 ```

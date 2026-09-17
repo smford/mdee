@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="mdee — High-performance terminal Markdown viewer for macOS iTerm2 with native inline images, responsive ANSI tables, Chroma syntax highlighting, and clickable hyperlinks.">
+  <meta name="description" content="mdee — High-performance terminal Markdown viewer for Kitty, Ghostty, WezTerm, iTerm2, and modern terminals with native inline images, responsive ANSI tables, Chroma syntax highlighting, and clickable hyperlinks.">
   <meta name="color-scheme" content="light dark">
 
   <!-- OpenGraph / Social Metadata -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="mdee — Terminal Markdown Viewer for macOS iTerm2">
-  <meta property="og:description" content="High-performance terminal Markdown viewer featuring OSC 1337 inline graphics, responsive ANSI tables, and SRE production reliability.">
+  <meta property="og:title" content="mdee — Terminal Markdown Viewer for Kitty, Ghostty, WezTerm, iTerm2 &amp; Modern Terminals">
+  <meta property="og:description" content="High-performance terminal Markdown viewer featuring multi-protocol inline graphics (Kitty, iTerm2, Sixel), responsive ANSI tables, and SRE production reliability.">
   <meta property="og:image" content="assets/screenshots/demo-overview.png?v=1.2.2">
 
-  <title>mdee — Terminal Markdown Viewer for macOS iTerm2</title>
+  <title>mdee — Terminal Markdown Viewer for Kitty, Ghostty, WezTerm, iTerm2 &amp; Modern Terminals</title>
 
   <!-- Prevent FOUC when restoring user theme preference -->
   <script>
@@ -42,6 +42,7 @@
       <nav aria-label="Main Navigation">
         <ul class="nav-links">
           <li><a href="#features" class="nav-link">Features</a></li>
+          <li><a href="#compatibility" class="nav-link">Compatibility</a></li>
           <li><a href="#gallery" class="nav-link">Screenshots</a></li>
           <li><a href="#doctor" class="nav-link">Doctor</a></li>
           <li><a href="#cli" class="nav-link">CLI Options</a></li>
@@ -88,7 +89,7 @@
         <!-- Release Badge -->
         <div class="hero-pill">
           <span class="dot" aria-hidden="true"></span>
-          <span>v1.2.2 Ready • Native iTerm2 Graphics &amp; Homebrew Tap</span>
+          <span>v1.6.0 Ready • Kitty, Ghostty, WezTerm, iTerm2 &amp; Sixel Graphics</span>
         </div>
 
         <!-- Title & Subtitle -->
@@ -96,7 +97,7 @@
           The high-performance Markdown viewer <span class="text-gradient">your terminal deserves.</span>
         </h1>
         <p class="hero-subtitle">
-          Render rich GitHub-flavored Markdown with inline iTerm2 images, native Mermaid diagrams, responsive ANSI tables, Chroma syntax highlighting, and clickable OSC 8 links directly in your command line.
+          Render rich GitHub-flavored Markdown with native inline graphics (Kitty, iTerm2, Sixel), responsive ANSI tables, Chroma syntax highlighting, and clickable OSC 8 links directly in your command line.
         </p>
 
         <!-- Quick Install Box -->
@@ -179,8 +180,8 @@
           <div class="stat-label">Startup Time (Pure Go Static Binary)</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">OSC 1337</div>
-          <div class="stat-label">Native Inline iTerm2 Graphics</div>
+          <div class="stat-value">Multi-Protocol</div>
+          <div class="stat-label">Kitty, iTerm2 &amp; Sixel Graphics</div>
         </div>
         <div class="stat-card">
           <div class="stat-value">6 Presets</div>
@@ -209,13 +210,13 @@
           <div class="bento-card bento-col-6">
             <div>
               <div class="card-icon">🖼️</div>
-              <h3>Native Inline Images (OSC 1337)</h3>
+              <h3>Multi-Protocol Inline Graphics</h3>
               <p>
-                Renders PNG, JPEG, GIF, WebP, and SVG images directly inside your terminal grid using the iTerm2 OSC 1337 graphics protocol. Supports remote HTTP URLs, local file paths, and Base64 data URIs with automatic cell-height dimension constraints and graceful terminal-width fallback cards.
+                Renders PNG, JPEG, GIF, WebP, and SVG images directly inside your terminal grid using Kitty (<code>\033_G</code>), iTerm2 (<code>OSC 1337</code>), or DEC Sixel (<code>\033Pq</code>) protocols. Features in-memory PNG transcoding for Kitty, responsive cell sizing, and graceful box art fallback.
               </p>
             </div>
             <div class="code-box">
-              <code>$ mdee --image-width 80 --image-height auto architecture.md</code>
+              <code>$ mdee --image-protocol kitty --image-width 80 architecture.md</code>
             </div>
           </div>
 
@@ -225,7 +226,7 @@
               <div class="card-icon">🧜‍♀️</div>
               <h3>Native Mermaid Diagrams</h3>
               <p>
-                Renders flowcharts, sequence diagrams, and state machines graphically via iTerm2 OSC 1337 and Kitty protocols. Features Catmull-Rom 2x HiDPI resampling, automated background contrast cards (fixing dark/light terminal blend), and graceful cascading fallback to Unicode box-drawing or pure 7-bit ASCII text art.
+                Renders flowcharts, sequence diagrams, and state machines graphically via Kitty, iTerm2, and Sixel protocols. Features Catmull-Rom 2x HiDPI resampling, automated background contrast cards (fixing dark/light terminal blend), and graceful cascading fallback to Unicode box-drawing or pure 7-bit ASCII text art.
               </p>
             </div>
             <div class="code-box">
@@ -308,6 +309,98 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Terminal Compatibility Section -->
+    <section id="compatibility" class="section">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">Cross-Terminal</span>
+          <h2 class="section-title">Terminal Compatibility Matrix</h2>
+          <p class="section-subtitle">First-class multi-protocol graphics and layout compatibility across macOS, Linux, and Windows terminal emulators.</p>
+        </div>
+
+        <div class="table-responsive">
+          <table class="cli-table">
+            <thead>
+              <tr>
+                <th>Terminal Emulator</th>
+                <th>Default Protocol</th>
+                <th>Display Output</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Kitty</strong></td>
+                <td><span class="code-badge">kitty</span></td>
+                <td>🖼️ Native Inline Image</td>
+                <td>High-speed Kitty graphics (<code>\033_G</code>) with chunking</td>
+              </tr>
+              <tr>
+                <td><strong>Ghostty</strong></td>
+                <td><span class="code-badge">kitty</span></td>
+                <td>🖼️ Native Inline Image</td>
+                <td>Native Kitty protocol preferred; OSC 1337 also supported</td>
+              </tr>
+              <tr>
+                <td><strong>WezTerm</strong></td>
+                <td><span class="code-badge">iterm2</span></td>
+                <td>🖼️ Native Inline Image</td>
+                <td>Full OSC 1337 and Kitty protocol support</td>
+              </tr>
+              <tr>
+                <td><strong>iTerm2</strong></td>
+                <td><span class="code-badge">iterm2</span></td>
+                <td>🖼️ Native Inline Image</td>
+                <td>Native OSC 1337 inline image protocol</td>
+              </tr>
+              <tr>
+                <td><strong>Foot</strong></td>
+                <td><span class="code-badge">sixel</span></td>
+                <td>🖼️ Native Inline Image</td>
+                <td>High-performance DEC Sixel bitmap graphics</td>
+              </tr>
+              <tr>
+                <td><strong>mlterm</strong></td>
+                <td><span class="code-badge">sixel</span></td>
+                <td>🖼️ Native Inline Image</td>
+                <td>DEC Sixel bitmap protocol</td>
+              </tr>
+              <tr>
+                <td><strong>mintty</strong></td>
+                <td><span class="code-badge">iterm2</span></td>
+                <td>🖼️ Native Inline Image</td>
+                <td>Windows terminal with OSC 1337 and Sixel</td>
+              </tr>
+              <tr>
+                <td><strong>Apple Terminal</strong></td>
+                <td><span class="code-badge">none</span></td>
+                <td>🔤 Unicode Box Art</td>
+                <td>Graceful fallback (no image protocol support)</td>
+              </tr>
+              <tr>
+                <td><strong>Alacritty</strong></td>
+                <td><span class="code-badge">none</span></td>
+                <td>🔤 Unicode Box Art</td>
+                <td>Graceful fallback (no image protocol support)</td>
+              </tr>
+              <tr>
+                <td><strong>CI/CD Runners</strong></td>
+                <td><span class="code-badge">none</span></td>
+                <td>🔤 Unicode Box Art / ASCII</td>
+                <td>Automated non-interactive TTY fallback</td>
+              </tr>
+              <tr>
+                <td><strong>Output piped to file / grep</strong></td>
+                <td><span class="code-badge">none</span></td>
+                <td>📄 Clean Text</td>
+                <td>Safe TTY detection protects output files from binary graphics escape sequences</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -413,8 +506,11 @@
 │ Terminal Dimensions      │ 120 cols x 35 rows│ <span style="color:#38bdf8;">INFO</span>                    │
 │ TERM_PROGRAM             │ iTerm.app         │ <span style="color:#38bdf8;">INFO</span>                    │
 │ TERM                     │ xterm-256color    │ <span style="color:#38bdf8;">INFO</span>                    │
-│ iTerm2 Detection         │ true              │ <span style="color:#10b981; font-weight:700;">DETECTED (macOS iTerm2)</span> │
-│ OSC 1337 (Inline Images) │ true              │ <span style="color:#10b981; font-weight:700;">ENABLED</span>                 │
+│ Terminal Emulator        │ iTerm2            │ <span style="color:#10b981; font-weight:700;">DETECTED (iterm2 graphics)</span> │
+│ Active Graphics Protocol │ iterm2            │ <span style="color:#10b981; font-weight:700;">iTerm2 Graphics (OSC 1337)</span> │
+│ Kitty Graphics (APC)     │ false             │ <span style="color:#ef4444; font-weight:700;">DISABLED</span>                │
+│ iTerm2 Graphics (OSC 1337)│ true             │ <span style="color:#10b981; font-weight:700;">ENABLED</span>                 │
+│ DEC Sixel Graphics (DCS) │ false             │ <span style="color:#ef4444; font-weight:700;">DISABLED</span>                │
 │ OSC 8 (Terminal Links)   │ true              │ <span style="color:#10b981; font-weight:700;">ENABLED</span>                 │
 │ TrueColor (24-bit)       │ true              │ <span style="color:#10b981; font-weight:700;">ENABLED</span>                 │
 ╰──────────────────────────┴───────────────────┴─────────────────────────╯</pre>
@@ -471,7 +567,7 @@
                 <td><span class="code-badge">--images</span></td>
                 <td><span class="code-badge">-i</span></td>
                 <td><code>"auto"</code></td>
-                <td>Inline image rendering: <code>auto</code> (iTerm2 only), <code>always</code>, <code>never</code></td>
+                <td>Inline image rendering: <code>auto</code> (detect protocol), <code>always</code>, <code>never</code></td>
               </tr>
               <tr>
                 <td><span class="code-badge">--image-width</span></td>
@@ -484,6 +580,12 @@
                 <td>—</td>
                 <td><code>"auto"</code></td>
                 <td>Image height constraint: <code>auto</code>, <code>20</code>, <code>300px</code></td>
+              </tr>
+              <tr>
+                <td><span class="code-badge">--image-protocol</span></td>
+                <td>—</td>
+                <td><code>"auto"</code></td>
+                <td>Image graphics protocol: <code>auto</code>, <code>kitty</code>, <code>iterm2</code>, <code>sixel</code>, <code>none</code></td>
               </tr>
               <tr>
                 <td><span class="code-badge">--mermaid</span></td>
@@ -623,7 +725,7 @@ make build
     <div class="container footer-inner">
       <div class="footer-credits">
         <p><strong>mdee</strong> — High-Performance Terminal Markdown Viewer</p>
-        <p>Released under the <strong>GNU AGPL v3.0</strong> License. Designed for macOS iTerm2.</p>
+        <p>Released under the <strong>GNU AGPL v3.0</strong> License. Engineered for modern terminals (Kitty, Ghostty, WezTerm, iTerm2, Linux &amp; macOS).</p>
       </div>
 
       <ul class="footer-links">

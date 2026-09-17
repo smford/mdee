@@ -1,30 +1,51 @@
-# mdee: Terminal Markdown Viewer for macOS iTerm2
+# mdee: High-Fidelity Terminal Markdown Viewer
 
 [![CI](https://github.com/smford/mdee/actions/workflows/ci.yml/badge.svg)](https://github.com/smford/mdee/actions/workflows/ci.yml)
 [![Website](https://img.shields.io/badge/Website-smford.github.io%2Fmdee-6366f1?logo=google-chrome&logoColor=white)](https://smford.github.io/mdee/)
 [![Go Version](https://img.shields.io/badge/Go-1.24%2B-00ADD8?logo=go)](https://golang.org)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
-[![Platform: macOS iTerm2](https://img.shields.io/badge/Platform-macOS%20iTerm2-blue?logo=apple)](https://iterm2.com)
+[![Platform: macOS & Linux](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux-blue?logo=linux&logoColor=white)](#terminal-compatibility)
 
-`mdee` is a production-grade terminal Markdown viewer written in Go, specifically engineered for macOS and optimized for [iTerm2](https://iterm2.com).
+`mdee` is a production-grade terminal Markdown viewer written in Go, specifically engineered for modern terminal emulators (Kitty, Ghostty, WezTerm, iTerm2, Foot, Linux & macOS).
 
 Designed through a Senior Site Reliability Engineering lens, `mdee` solves common terminal Markdown rendering issues: **garbled wide tables**, **missing or broken images**, **pipe panics**, and **unreadable terminal wrapping**.
 
 <p align="center">
-  <img src="assets/screenshots/demo-overview.png" alt="mdee Terminal Markdown Viewer in macOS iTerm2" width="850" />
+  <img src="assets/screenshots/demo-overview.png" alt="mdee Terminal Markdown Viewer" width="850" />
 </p>
+
+---
+
+## Terminal Compatibility
+
+`mdee` provides first-class, multi-protocol graphics and layout compatibility with modern terminal emulators on macOS, Linux, and Windows:
+
+| Terminal Emulator | Default Protocol | Display Output | Notes |
+| :--- | :--- | :--- | :--- |
+| **Kitty** | `kitty` | 🖼️ Native Inline Image | High-speed Kitty graphics (`\033_G`) with chunking |
+| **Ghostty** | `kitty` | 🖼️ Native Inline Image | Native Kitty protocol preferred; OSC 1337 also supported |
+| **WezTerm** | `iterm2` | 🖼️ Native Inline Image | Full OSC 1337 and Kitty protocol support |
+| **iTerm2** | `iterm2` | 🖼️ Native Inline Image | Native OSC 1337 inline image protocol |
+| **Foot** | `sixel` | 🖼️ Native Inline Image | High-performance DEC Sixel bitmap graphics |
+| **mlterm** | `sixel` | 🖼️ Native Inline Image | DEC Sixel bitmap protocol |
+| **mintty** | `iterm2` | 🖼️ Native Inline Image | Windows terminal with OSC 1337 and Sixel |
+| **Apple Terminal** | `none` | 🔤 Unicode Box Art | Graceful fallback (no image protocol support) |
+| **Alacritty** | `none` | 🔤 Unicode Box Art | Graceful fallback (no image protocol support) |
+| **CI/CD Runners** | `none` | 🔤 Unicode Box Art / ASCII | Automated non-interactive TTY fallback |
+| **Output piped to file / grep** | `none` | 📄 Clean Text | Safe TTY detection protects output files from binary graphics escape sequences |
 
 ---
 
 ## Key Features
 
-### 1. Accurate Inline Image Rendering (iTerm2 OSC 1337)
-- **Native iTerm2 Protocol**: Directly transmits image bitstreams using the proprietary `OSC 1337` inline image escape sequence.
-- **Multi-Format Support**: Displays PNG, JPEG, GIF (including animated GIFs), WebP, TIFF, and SVG natively.
+### 1. Accurate Inline Image Rendering (Multi-Protocol & Native Graphics)
+- **Native Multi-Protocol Graphics**: Transmits inline graphics using Kitty APC (`\033_G`), iTerm2 OSC 1337 (`\033]1337`), or DEC Sixel bitmap (`\033Pq`) protocols depending on terminal capabilities or user flag.
+- **Protocol Override**: Explicitly choose your preferred image graphics protocol with `--image-protocol` (`auto`, `kitty`, `iterm2`, `sixel`, `none`).
+- **Multi-Format Support**: Displays PNG, JPEG, GIF (including animated GIFs), WebP, TIFF, and SVG. Non-PNG images are automatically converted in-memory to PNG when transmitting via the Kitty protocol.
 - **Smart Asset Resolution**: Resolves relative file paths (e.g. `![diagram](./assets/arch.png)`) relative to the Markdown document's location, not just current working directory.
 - **Resilient Remote Fetching**: Streams `http://` and `https://` images with bounded HTTP timeouts (10s) and a 25MB safety buffer to protect system memory.
-- **tmux Passthrough**: Transparently wraps image payloads in tmux DCS escape sequences (`\033Ptmux;...`) when running inside tmux sessions.
-- **Graceful Degradation**: Automatically falls back to formatted diagnostic placeholders on unsupported terminals or when `--images=never` is selected.
+- **tmux Passthrough**: Transparently wraps image payloads in tmux DCS escape sequences (`\033Ptmux;...`) when running inside tmux sessions (`set -g allow-passthrough on`).
+- **Graceful Degradation**: Automatically falls back to formatted diagnostic placeholders on unsupported terminals, when piping/redirecting, or when `--images=never` is selected.
 
 ### 2. Native Mermaid Diagram Rendering & Cascading Fallback
 - **Embedded `golang-mermaid` Engine**: Uses [`github.com/smford/golang-mermaid`](https://github.com/smford/golang-mermaid) to render Mermaid diagrams (`flowchart`, `sequenceDiagram`, `stateDiagram`, etc.) directly in the terminal.
@@ -167,14 +188,15 @@ mdee -c ~/.mdeerc --theme dracula report.md
 ## CLI Options
 
 | Flag | Shorthand | Default | Description |
-| :--- | :---: | :---: | :--- |
+| :--- | :--- | :--- | :--- |
 | `--config` | `-c` | `""` | Path to configuration file (defaults to `~/.mdeerc` if present) |
 | `--width` | `-w` | `0` | Explicit terminal width in columns (`0` = auto-detect) |
 | `--theme` | `-t` | `"dark"` | Color theme: `dark`, `light`, `dracula`, `monokai`, `solarized-dark`, `solarized-light`, `plain` |
 | `--table-style` | `-s` | `"rounded"` | Border style: `rounded`, `box`, `double`, `ascii`, `markdown`, `minimal` |
-| `--images` | `-i` | `"auto"` | Inline image mode: `auto` (iTerm2 only), `always`, `never` |
+| `--images` | `-i` | `"auto"` | Inline image mode: `auto` (detect protocol), `always`, `never` |
 | `--image-width` | | `"auto"` | Image width constraint: `auto`, `100%`, `80`, `400px` |
 | `--image-height`| | `"auto"` | Image height constraint: `auto`, `20`, `300px` |
+| `--image-protocol`| | `"auto"` | Image graphics protocol: `auto`, `kitty`, `iterm2`, `sixel`, `none` |
 | `--mermaid` | `-m` | `"auto"` | Mermaid render mode: `auto`, `image`, `ansi`, `unicode`, `ascii`, `raw` |
 | `--mermaid-theme` | | `""` | Mermaid theme: `dark`, `default`, `slate`, `blueprint`, `neon`, `neutral`, `forest` |
 | `--mermaid-width` | | `"auto"` | Mermaid image display width: `auto` (smart responsive), `100%`, `80`, `800px` |
@@ -297,9 +319,12 @@ $ mdee doctor
 │ Terminal Dimensions      │ 120 cols x 36 rows│ INFO                    │
 │ TERM_PROGRAM             │ iTerm.app         │ INFO                    │
 │ TERM                     │ xterm-256color    │ INFO                    │
-│ iTerm2 Detection         │ true              │ DETECTED (macOS iTerm2) │
+│ Terminal Emulator        │ iTerm2            │ DETECTED (iterm2 graphics) │
 │ Inside tmux Session      │ false             │ No                      │
-│ OSC 1337 (Inline Images) │ true              │ ENABLED                 │
+│ Active Graphics Protocol │ iterm2            │ iTerm2 Graphics (OSC 1337)│
+│ Kitty Graphics (APC)     │ false             │ DISABLED                │
+│ iTerm2 Graphics (OSC 1337)│ true             │ ENABLED                 │
+│ DEC Sixel Graphics (DCS) │ false             │ DISABLED                │
 │ OSC 8 (Terminal Links)   │ true              │ ENABLED                 │
 │ TrueColor (24-bit)       │ true              │ ENABLED                 │
 │ Mermaid Protocol         │ iterm2            │ iTerm2 Graphics (OSC 1337)│
@@ -311,7 +336,7 @@ $ mdee doctor
 ── Protocol Verification Test ──────────────────────────────────
 
   • OSC 8 Hyperlink: Click here to test OSC 8 GitHub link
-  • OSC 1337 Inline Image Test (32x32 color gradient swatch):
+  • Inline Image Test (iterm2 protocol, 32x32 color gradient swatch):
     [Inline graphic test rendered here]
   • Mermaid Diagram Rendering Test (image mode, iterm2 protocol):
     [Inline Mermaid diagram graphic rendered here]
@@ -323,9 +348,9 @@ $ mdee doctor
 
 ---
 
-## tmux Configuration for iTerm2 Images
+## tmux Configuration for Inline Graphics (Kitty, iTerm2, Sixel)
 
-If you run inside `tmux` within iTerm2, tmux blocks terminal escape sequences by default unless passthrough is enabled. To display images seamlessly inside tmux:
+If you run inside `tmux`, tmux blocks terminal escape sequences by default unless passthrough is enabled. To display images and diagrams seamlessly inside tmux:
 
 1. Add the following line to `~/.tmux.conf`:
    ```tmux
