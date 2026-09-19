@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/rivo/uniseg"
@@ -39,6 +40,13 @@ type Info struct {
 	ByteSize int
 }
 
+type cachedRemoteImage struct {
+	data     []byte
+	filename string
+}
+
+var remoteCache sync.Map
+
 // Fetch loads an image from a local file, HTTP/HTTPS URL, or base64 data URI.
 // If src is a relative path, it will be resolved relative to basePath.
 func Fetch(ctx context.Context, src string, basePath string, client *http.Client) ([]byte, string, error) {
@@ -52,12 +60,28 @@ func Fetch(ctx context.Context, src string, basePath string, client *http.Client
 		return parseDataURI(src)
 	}
 
-	// 2. HTTP/HTTPS URL
+	// 2. Protocol-relative URL: //example.com/image.png
+	if strings.HasPrefix(src, "//") {
+		src = "https:" + src
+	}
+
+	// 3. HTTP/HTTPS URL
 	if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") {
 		return fetchRemote(ctx, src, client)
 	}
 
-	// 3. Local filesystem
+	// 4. Remote basePath resolution: if basePath is an HTTP/HTTPS URL and src is relative
+	if (strings.HasPrefix(basePath, "http://") || strings.HasPrefix(basePath, "https://")) &&
+		!filepath.IsAbs(src) && !strings.HasPrefix(src, "/") {
+		if baseURL, err := url.Parse(basePath); err == nil {
+			if relURL, err := url.Parse(src); err == nil {
+				resolved := baseURL.ResolveReference(relURL).String()
+				return fetchRemote(ctx, resolved, client)
+			}
+		}
+	}
+
+	// 5. Local filesystem
 	return fetchLocal(src, basePath)
 }
 
@@ -102,6 +126,11 @@ func parseDataURI(dataURI string) ([]byte, string, error) {
 }
 
 func fetchRemote(ctx context.Context, rawURL string, client *http.Client) ([]byte, string, error) {
+	if val, ok := remoteCache.Load(rawURL); ok {
+		entry := val.(cachedRemoteImage)
+		return entry.data, entry.filename, nil
+	}
+
 	if client == nil {
 		client = &http.Client{Timeout: DefaultTimeout}
 	}
@@ -143,18 +172,40 @@ func fetchRemote(ctx context.Context, rawURL string, client *http.Client) ([]byt
 		}
 	}
 
+	remoteCache.Store(rawURL, cachedRemoteImage{data: data, filename: filename})
 	return data, filename, nil
 }
 
 func fetchLocal(filePath, basePath string) ([]byte, string, error) {
-	// If path is relative and basePath is given, join them
+	// Support tilde home directory expansion (~/...)
 	targetPath := filePath
-	if !filepath.IsAbs(targetPath) && basePath != "" {
+	if strings.HasPrefix(targetPath, "~/") {
+		if home, err := os.UserHomeDir(); err == nil {
+			targetPath = filepath.Join(home, targetPath[2:])
+		}
+	} else if !filepath.IsAbs(targetPath) && basePath != "" {
 		targetPath = filepath.Join(basePath, targetPath)
 	}
 
 	cleanPath := filepath.Clean(targetPath)
 	stat, err := os.Stat(cleanPath)
+	if err != nil {
+		// Attempt stripping query params and fragments (common in GitHub READMEs, e.g. diagram.png?raw=true)
+		stripped := targetPath
+		if qIdx := strings.IndexAny(stripped, "?#"); qIdx != -1 {
+			stripped = stripped[:qIdx]
+		}
+		// Also attempt URL path unescaping (e.g. %20 -> space)
+		if unescaped, uerr := url.PathUnescape(stripped); uerr == nil {
+			stripped = unescaped
+		}
+		cleanStripped := filepath.Clean(stripped)
+		if sStat, sErr := os.Stat(cleanStripped); sErr == nil {
+			cleanPath = cleanStripped
+			stat = sStat
+			err = nil
+		}
+	}
 	if err != nil {
 		return nil, "", fmt.Errorf("file not found: %w", err)
 	}

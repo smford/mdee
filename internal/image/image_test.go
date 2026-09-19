@@ -316,3 +316,84 @@ func TestFormatTerminal(t *testing.T) {
 		t.Errorf("expected error for ProtocolNone")
 	}
 }
+
+func TestFetch_AdvancedFeatures(t *testing.T) {
+	pngData := generateTestPNG(t)
+	tmpDir := t.TempDir()
+
+	// 1. File with space in name
+	spacedPath := filepath.Join(tmpDir, "my test image.png")
+	if err := os.WriteFile(spacedPath, pngData, 0600); err != nil {
+		t.Fatalf("failed writing spaced file: %v", err)
+	}
+
+	ctx := context.Background()
+
+	// Fetch using URL encoding: my%20test%20image.png
+	got, name, err := Fetch(ctx, "my%20test%20image.png", tmpDir, nil)
+	if err != nil {
+		t.Fatalf("Fetch url-encoded failed: %v", err)
+	}
+	if !bytes.Equal(got, pngData) || name != "my test image.png" {
+		t.Errorf("expected unescaped file match, got name %s", name)
+	}
+
+	// Fetch with GitHub raw query param: my test image.png?raw=true#section
+	gotQuery, _, err := Fetch(ctx, "my test image.png?raw=true#section", tmpDir, nil)
+	if err != nil {
+		t.Fatalf("Fetch with query param failed: %v", err)
+	}
+	if !bytes.Equal(gotQuery, pngData) {
+		t.Errorf("expected query param stripped match")
+	}
+
+	// 2. Remote server tests for protocol-relative, remote basePath, and caching
+	hits := 0
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		if strings.HasSuffix(r.URL.Path, "/logo.png") {
+			w.Header().Set("Content-Type", "image/png")
+			_, _ = w.Write(pngData)
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	// Protocol relative URL (prepends https:)
+	protoRelURL := "//" + strings.TrimPrefix(server.URL, "https://") + "/logo.png"
+	gotProto, _, err := Fetch(ctx, protoRelURL, "", server.Client())
+	if err != nil {
+		t.Fatalf("Fetch protocol-relative failed: %v", err)
+	}
+	if !bytes.Equal(gotProto, pngData) {
+		t.Errorf("expected protocol-relative match")
+	}
+
+	// Relative URL resolved against remote basePath
+	baseURL := server.URL + "/docs/"
+	gotBase, _, err := Fetch(ctx, "logo.png", baseURL, server.Client())
+	if err != nil {
+		t.Fatalf("Fetch with remote basePath failed: %v", err)
+	}
+	if !bytes.Equal(gotBase, pngData) {
+		t.Errorf("expected remote basePath match")
+	}
+
+	// In-memory cache verification: second fetch of same URL should not hit server
+	initialHits := hits
+	cachedURL := server.URL + "/logo.png"
+	_, _, err = Fetch(ctx, cachedURL, "", server.Client())
+	if err != nil {
+		t.Fatalf("first fetch failed: %v", err)
+	}
+	hitsAfterFirst := hits
+	_, _, err = Fetch(ctx, cachedURL, "", server.Client())
+	if err != nil {
+		t.Fatalf("second fetch failed: %v", err)
+	}
+	if hits != hitsAfterFirst {
+		t.Errorf("expected cached response without incrementing hits: initial=%d, afterFirst=%d, afterSecond=%d",
+			initialHits, hitsAfterFirst, hits)
+	}
+}
