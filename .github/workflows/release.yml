@@ -4,6 +4,13 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - 'docs/**'
+      - 'assets/**'
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+      - '.github/workflows/pages.yml'
     tags:
       - 'v*'
   workflow_dispatch:
