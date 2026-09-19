@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -365,7 +366,15 @@ func readSource(ctx context.Context, target string) ([]byte, string, error) {
 		if err != nil {
 			return nil, "", err
 		}
-		return data, ".", nil
+		base := target
+		if parsed, err := url.Parse(target); err == nil {
+			parsed.Path = filepath.Dir(parsed.Path)
+			if !strings.HasSuffix(parsed.Path, "/") {
+				parsed.Path += "/"
+			}
+			base = parsed.String()
+		}
+		return data, base, nil
 	}
 
 	// Local file

@@ -90,8 +90,18 @@ This tests graceful degradation when an image source cannot be resolved:
 
 ![Missing Asset Test](./assets/does-not-exist-for-testing.png "Non-existent File")
 
+### 2.4 HTML Image Tags (`<img src="...">`)
+
+Images referenced using HTML `<img>` tags (including relative file paths and web URLs, with container wrappers such as `<p align="center">`, `<div>`, or `<a>`) are parsed and rendered inline:
+
+<p align="center">
+  <img src="testdata/sample.png" alt="HTML Centered SRE Telemetry Chart" width="400" />
+</p>
+
+Inline HTML images within sentences are also supported: <img src="testdata/sample.png" alt="Inline Badge" width="150" /> seamlessly embedded.
+
 > **Verification Check**:
-> - In compatible terminals (**Kitty**, **Ghostty**, **WezTerm**, **iTerm2**, **Foot**), Figure 1 should display as an inline graphic.
+> - In compatible terminals (**Kitty**, **Ghostty**, **WezTerm**, **iTerm2**, **Foot**), Figure 1 and the HTML images above should display as inline graphics.
 > - The missing asset above should render an elegant warning box rather than aborting or crashing.
 > - Run with `--images=never` or `--image-protocol=none` to view ASCII/Unicode placeholder cards for all images.
 > - Test protocol overrides: `--image-protocol kitty`, `--image-protocol iterm2`, `--image-protocol sixel`.

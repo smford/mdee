@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/alecthomas/chroma/v2"
 	"github.com/alecthomas/chroma/v2/formatters"
@@ -71,6 +73,9 @@ func (r *Renderer) Render(ctx context.Context, source []byte) (string, error) {
 	reader := text.NewReader(source)
 	doc := r.mdParser.Parser().Parse(reader)
 
+	// Pre-fetch remote images concurrently to minimize rendering latency
+	r.prefetchRemoteImages(ctx, doc, source)
+
 	var sb strings.Builder
 	if frontmatterCard != "" {
 		sb.WriteString(frontmatterCard)
@@ -94,6 +99,102 @@ func (r *Renderer) Render(ctx context.Context, source []byte) (string, error) {
 
 	result := strings.TrimRight(sb.String(), "\n") + "\n"
 	return result, nil
+}
+
+func (r *Renderer) prefetchRemoteImages(ctx context.Context, doc gast.Node, source []byte) {
+	if r.opts.ImageMode == "never" {
+		return
+	}
+
+	targetProto := r.opts.ImageProtocol
+	if targetProto == mermaid.ProtocolAuto {
+		targetProto = r.termInfo.GraphicsProtocol
+	}
+	if !r.termInfo.IsTTY && r.opts.ImageMode != "always" {
+		return
+	}
+	if targetProto == mermaid.ProtocolNone && r.opts.ImageMode != "always" {
+		return
+	}
+
+	var urls []string
+	seen := make(map[string]bool)
+
+	addURL := func(u string) {
+		u = strings.TrimSpace(u)
+		if u == "" || seen[u] {
+			return
+		}
+		if strings.HasPrefix(u, "http://") || strings.HasPrefix(u, "https://") || strings.HasPrefix(u, "//") {
+			seen[u] = true
+			urls = append(urls, u)
+		} else if (strings.HasPrefix(r.opts.BasePath, "http://") || strings.HasPrefix(r.opts.BasePath, "https://")) &&
+			!filepath.IsAbs(u) && !strings.HasPrefix(u, "/") {
+			seen[u] = true
+			urls = append(urls, u)
+		}
+	}
+
+	_ = gast.Walk(doc, func(n gast.Node, entering bool) (gast.WalkStatus, error) {
+		if !entering {
+			return gast.WalkContinue, nil
+		}
+		switch node := n.(type) {
+		case *gast.Image:
+			addURL(string(node.Destination))
+		case *gast.HTMLBlock:
+			var buf bytes.Buffer
+			for i := 0; i < node.Lines().Len(); i++ {
+				line := node.Lines().At(i)
+				buf.Write(line.Value(source))
+			}
+			raw := buf.String()
+			if strings.Contains(strings.ToLower(raw), "<img") {
+				items, _ := parseHTMLTokens(raw)
+				for _, item := range items {
+					if item.isImg && item.imgInfo.Src != "" {
+						addURL(item.imgInfo.Src)
+					}
+				}
+			}
+		case *gast.RawHTML:
+			var buf bytes.Buffer
+			for i := 0; i < node.Segments.Len(); i++ {
+				seg := node.Segments.At(i)
+				buf.Write(seg.Value(source))
+			}
+			raw := buf.String()
+			if strings.Contains(strings.ToLower(raw), "<img") {
+				items, _ := parseHTMLTokens(raw)
+				for _, item := range items {
+					if item.isImg && item.imgInfo.Src != "" {
+						addURL(item.imgInfo.Src)
+					}
+				}
+			}
+		}
+		return gast.WalkContinue, nil
+	})
+
+	if len(urls) == 0 {
+		return
+	}
+
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, 6)
+
+	for _, u := range urls {
+		wg.Add(1)
+		go func(targetURL string) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			_, _, _ = image.Fetch(ctx, targetURL, r.opts.BasePath, r.httpClient)
+		}(u)
+	}
+
+	wg.Wait()
 }
 
 type listInfo struct {
@@ -194,6 +295,15 @@ func (s *renderState) renderParagraph(p *gast.Paragraph) string {
 
 	content := s.renderInlines(p)
 	if s.renderer.opts.Plain {
+		return content
+	}
+
+	// SRE Protection: If content contains raw terminal graphics sequences or fallback box,
+	// do not wrap in lipgloss Paragraph styling to avoid protocol corruption.
+	if strings.Contains(content, "\x1b_G") ||
+		strings.Contains(content, "\x1b]1337;File=") ||
+		strings.Contains(content, "\x1bPq") ||
+		strings.HasPrefix(strings.TrimSpace(content), "╭───") {
 		return content
 	}
 
@@ -662,14 +772,21 @@ func (s *renderState) renderHTMLBlock(h *gast.HTMLBlock) string {
 		line := lines.At(i)
 		buf.Write(line.Value(s.source))
 	}
-	return buf.String()
+	raw := buf.String()
+	if !strings.Contains(strings.ToLower(raw), "<img") {
+		return raw
+	}
+	return s.renderHTML(raw, true)
 }
 
 func (s *renderState) renderImage(img *gast.Image) string {
 	dest := string(img.Destination)
 	altText := s.extractText(img)
 	title := string(img.Title)
+	return s.renderImageCommon(dest, altText, title, "", "", "")
+}
 
+func (s *renderState) renderImageCommon(dest, altText, title, customWidth, customHeight, linkURL string) string {
 	targetProto := s.renderer.opts.ImageProtocol
 	if targetProto == mermaid.ProtocolAuto {
 		targetProto = s.renderer.termInfo.GraphicsProtocol
@@ -702,10 +819,19 @@ func (s *renderState) renderImage(img *gast.Image) string {
 			return image.FormatFallback(altText, dest, err.Error(), s.width())
 		}
 
+		imgWidth := s.renderer.opts.ImageWidth
+		if imgWidth == "auto" && customWidth != "" {
+			imgWidth = customWidth
+		}
+		imgHeight := s.renderer.opts.ImageHeight
+		if imgHeight == "auto" && customHeight != "" {
+			imgHeight = customHeight
+		}
+
 		opts := image.TerminalOptions{
 			Protocol:            targetProto,
-			Width:               s.renderer.opts.ImageWidth,
-			Height:              s.renderer.opts.ImageHeight,
+			Width:               imgWidth,
+			Height:              imgHeight,
 			PreserveAspectRatio: true,
 			InTmux:              s.renderer.termInfo.IsTmux,
 		}
@@ -724,21 +850,44 @@ func (s *renderState) renderImage(img *gast.Image) string {
 		}
 
 		if caption != "" {
-			styledCaption := s.renderer.theme.Italic.Render("🖼  " + caption)
+			var styledCaption string
+			if s.renderer.opts.Plain {
+				if linkURL != "" {
+					styledCaption = fmt.Sprintf("🖼  %s (%s)", caption, linkURL)
+				} else {
+					styledCaption = "🖼  " + caption
+				}
+			} else {
+				styledCaption = s.renderer.theme.Italic.Render("🖼  " + caption)
+				if linkURL != "" && s.renderer.opts.Hyperlinks && s.renderer.termInfo.HasOSC8 && !s.renderer.termInfo.IsTmux {
+					styledCaption = term.FormatHyperlink(linkURL, styledCaption, true)
+				}
+			}
 			return seq + "\n" + styledCaption
 		}
 
 		return seq
 	}
 
-	return image.FormatFallback(altText, dest, "", s.width())
+	fallback := image.FormatFallback(altText, dest, "", s.width())
+	if linkURL != "" && s.renderer.opts.Plain {
+		fallback += fmt.Sprintf("\nLink: %s", linkURL)
+	}
+	return fallback
 }
 
 func (s *renderState) renderInlines(node gast.Node) string {
 	var sb strings.Builder
 
-	for child := node.FirstChild(); child != nil; child = child.NextSibling() {
+	for child := node.FirstChild(); child != nil; {
+		if raw, nextChild := s.extractAdjacentRawHTML(child); raw != "" {
+			sb.WriteString(s.renderHTML(raw, false))
+			child = nextChild
+			continue
+		}
+
 		sb.WriteString(s.renderInlineNode(child))
+		child = child.NextSibling()
 	}
 
 	return sb.String()
@@ -850,7 +999,11 @@ func (s *renderState) renderInlineNode(node gast.Node) string {
 			line := lines.At(i)
 			buf.Write(line.Value(s.source))
 		}
-		return buf.String()
+		raw := buf.String()
+		if !strings.Contains(strings.ToLower(raw), "<img") {
+			return raw
+		}
+		return s.renderHTML(raw, false)
 
 	default:
 		return s.renderInlines(node)

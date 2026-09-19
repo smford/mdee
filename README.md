@@ -43,7 +43,8 @@ Designed through a Senior Site Reliability Engineering lens, `mdee` solves commo
 - **Protocol Override**: Explicitly choose your preferred image graphics protocol with `--image-protocol` (`auto`, `kitty`, `iterm2`, `sixel`, `none`).
 - **Multi-Format Support**: Displays PNG, JPEG, GIF (including animated GIFs), WebP, TIFF, and SVG. Non-PNG images are automatically converted in-memory to PNG when transmitting via the Kitty protocol.
 - **Smart Asset Resolution**: Resolves relative file paths (e.g. `![diagram](./assets/arch.png)`) relative to the Markdown document's location, not just current working directory.
-- **Resilient Remote Fetching**: Streams `http://` and `https://` images with bounded HTTP timeouts (10s) and a 25MB safety buffer to protect system memory.
+- **HTML Image Tag Support**: Seamlessly parses and renders HTML images in both block and inline contexts (e.g. `<img src="..." width="400">`, `<p align="center"><img ...></p>`, or `<a><img ...></a>`), resolving relative filesystem paths and remote URLs, honoring width/height constraints, and stripping unnecessary HTML container noise.
+- **Resilient Remote Fetching**: Streams `http://` and `https://` images with bounded HTTP timeouts (10s), in-memory caching, concurrent AST pre-fetching, and a 25MB safety buffer to protect system memory.
 - **tmux Passthrough**: Transparently wraps image payloads in tmux DCS escape sequences (`\033Ptmux;...`) when running inside tmux sessions (`set -g allow-passthrough on`).
 - **Graceful Degradation**: Automatically falls back to formatted diagnostic placeholders on unsupported terminals, when piping/redirecting, or when `--images=never` is selected.
 
