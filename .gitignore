@@ -1,6 +1,6 @@
 # Binaries
 bin/
-mdee
+/mdee
 *.exe
 *.exe~
 *.dll

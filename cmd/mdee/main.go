@@ -313,6 +313,9 @@ func runViewer(ctx context.Context, opts config.Options, args []string) error {
 			return fmt.Errorf("failed to read from stdin: %w", err)
 		}
 		opts.BasePath = "."
+		if isMermaidSource("-", data) {
+			data = wrapMermaidCode(data)
+		}
 		return renderAndOutput(ctx, opts, termInfo, data)
 	}
 
@@ -322,6 +325,10 @@ func runViewer(ctx context.Context, opts config.Options, args []string) error {
 		data, basePath, err := readSource(ctx, target)
 		if err != nil {
 			return fmt.Errorf("failed reading target %q: %w", target, err)
+		}
+
+		if isMermaidSource(target, data) {
+			data = wrapMermaidCode(data)
 		}
 
 		targetOpts := opts
@@ -340,6 +347,49 @@ func runViewer(ctx context.Context, opts config.Options, args []string) error {
 	}
 
 	return outputContent(opts, termInfo, combinedOutput.String())
+}
+
+func isMermaidSource(target string, data []byte) bool {
+	cleanTarget := strings.ToLower(strings.TrimSpace(target))
+	if strings.HasSuffix(cleanTarget, ".mmd") || strings.HasSuffix(cleanTarget, ".mermaid") {
+		return true
+	}
+	// If piped from stdin or target has no standard markdown extension, inspect header
+	ext := filepath.Ext(cleanTarget)
+	if cleanTarget == "-" || cleanTarget == "" || (ext != ".md" && ext != ".markdown") {
+		trimmed := strings.TrimSpace(string(data))
+		if strings.HasPrefix(trimmed, "```") {
+			return false
+		}
+		lines := strings.Split(trimmed, "\n")
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if line == "" || strings.HasPrefix(line, "%%") {
+				continue // skip empty lines or mermaid comments
+			}
+			keywords := []string{
+				"graph ", "graph\t", "flowchart ", "flowchart\t",
+				"sequencediagram", "classdiagram", "statediagram",
+				"statediagram-v2", "erdiagram", "gantt", "pie",
+				"gitgraph", "journey", "mindmap", "timeline",
+				"quadrantchart", "xychart", "sankey-beta", "block-beta",
+				"architecture-beta", "packet-beta",
+			}
+			lower := strings.ToLower(line)
+			for _, kw := range keywords {
+				if strings.HasPrefix(lower, kw) || lower == strings.TrimSpace(kw) {
+					return true
+				}
+			}
+			break
+		}
+	}
+	return false
+}
+
+func wrapMermaidCode(data []byte) []byte {
+	trimmed := strings.TrimSpace(string(data))
+	return []byte("```mermaid\n" + trimmed + "\n```\n")
 }
 
 func readSource(ctx context.Context, target string) ([]byte, string, error) {
