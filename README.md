@@ -61,6 +61,10 @@ Designed through a Senior Site Reliability Engineering lens, `mdee` solves commo
 - **Scripting & Pipe Safety**: In `--plain` mode or when piped to non-interactive destinations, diagrams automatically render as pure 7-bit ASCII without ANSI escapes or binary sequences.
 - **Content-Addressed Caching**: Diagram renders are cached by SHA-256 hash to eliminate redundant processing and enable offline operation.
 
+<p align="center">
+  <img src="assets/screenshots/mermaid-diagram.png" alt="mdee Native Mermaid Diagram Rendering with Light Background" width="850" />
+</p>
+
 ### 3. High-Fidelity Table Layout Engine
 - **Strict Column Alignment**: Preserves Markdown syntax alignments (`:---` Left, `:---:` Center, `---:` Right) across headers and data rows.
 - **Unicode & Emoji Width Precision**: Calculates visual column boundaries using Unicode Standard Annex #29 / UAX #11 grapheme cluster metrics and ANSI stripping—eliminating jagged borders caused by emojis (`✅`, `⚠️`, `🚀`), variation selectors, or CJK glyphs.
