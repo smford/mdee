@@ -1,7 +1,9 @@
 # mdee: High-Fidelity Terminal Markdown Viewer
 
+> 🌐 **Full Website & Documentation**: [http://stephenford.org/mdee/](http://stephenford.org/mdee/)
+
 [![CI](https://github.com/smford/mdee/actions/workflows/ci.yml/badge.svg)](https://github.com/smford/mdee/actions/workflows/ci.yml)
-[![Website](https://img.shields.io/badge/Website-smford.github.io%2Fmdee-6366f1?logo=google-chrome&logoColor=white)](https://smford.github.io/mdee/)
+[![Website](https://img.shields.io/badge/Website-stephenford.org%2Fmdee-6366f1?logo=google-chrome&logoColor=white)](http://stephenford.org/mdee/)
 [![Go Version](https://img.shields.io/badge/Go-1.24%2B-00ADD8?logo=go)](https://golang.org)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
 [![Platform: macOS & Linux](https://img.shields.io/badge/Platform-macOS%20%7C%20Linux-blue?logo=linux&logoColor=white)](#terminal-compatibility)
