@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="mdee — High-performance terminal Markdown viewer for Kitty, Ghostty, WezTerm, iTerm2, and modern terminals with native inline images, responsive ANSI tables, Chroma syntax highlighting, and clickable hyperlinks.">
+  <meta name="description" content="mdee — High-performance terminal Markdown and Mermaid viewer for Kitty, Ghostty, WezTerm, iTerm2, and modern terminals with native inline images, responsive ANSI tables, Chroma syntax highlighting, and clickable hyperlinks.">
   <meta name="color-scheme" content="light dark">
 
   <!-- OpenGraph / Social Metadata -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="mdee — Terminal Markdown Viewer for Kitty, Ghostty, WezTerm, iTerm2 &amp; Modern Terminals">
-  <meta property="og:description" content="High-performance terminal Markdown viewer featuring multi-protocol inline graphics (Kitty, iTerm2, Sixel), responsive ANSI tables, and SRE production reliability.">
+  <meta property="og:title" content="mdee — Terminal Markdown &amp; Mermaid Viewer for Kitty, Ghostty, WezTerm, iTerm2 &amp; Modern Terminals">
+  <meta property="og:description" content="High-performance terminal Markdown and Mermaid (.mmd) viewer featuring multi-protocol inline graphics (Kitty, iTerm2, Sixel), responsive ANSI tables, and SRE production reliability.">
   <meta property="og:image" content="assets/screenshots/demo-overview.png?v=1.2.2">
 
-  <title>mdee — Terminal Markdown Viewer for Kitty, Ghostty, WezTerm, iTerm2 &amp; Modern Terminals</title>
+  <title>mdee — Terminal Markdown &amp; Mermaid Viewer for Kitty, Ghostty, WezTerm, iTerm2 &amp; Modern Terminals</title>
 
   <!-- Prevent FOUC when restoring user theme preference -->
   <script>
@@ -42,6 +42,7 @@
       <nav aria-label="Main Navigation">
         <ul class="nav-links">
           <li><a href="#features" class="nav-link">Features</a></li>
+          <li><a href="#mermaid" class="nav-link">Mermaid</a></li>
           <li><a href="#compatibility" class="nav-link">Compatibility</a></li>
           <li><a href="#gallery" class="nav-link">Screenshots</a></li>
           <li><a href="#doctor" class="nav-link">Doctor</a></li>
@@ -89,15 +90,15 @@
         <!-- Release Badge -->
         <div class="hero-pill">
           <span class="dot" aria-hidden="true"></span>
-          <span>v1.6.0 Ready • Kitty, Ghostty, WezTerm, iTerm2 &amp; Sixel Graphics</span>
+          <span>v1.7.0 Ready • Markdown &amp; Mermaid (.mmd) Viewer • Kitty, Ghostty, WezTerm, iTerm2</span>
         </div>
 
         <!-- Title & Subtitle -->
         <h1 class="hero-title">
-          The high-performance Markdown viewer <span class="text-gradient">your terminal deserves.</span>
+          The high-performance Markdown &amp; Mermaid viewer <span class="text-gradient">your terminal deserves.</span>
         </h1>
         <p class="hero-subtitle">
-          Render rich GitHub-flavored Markdown with native inline graphics (Kitty, iTerm2, Sixel), responsive ANSI tables, Chroma syntax highlighting, and clickable OSC 8 links directly in your command line.
+          Render rich GitHub-flavored Markdown and standalone Mermaid diagrams (<code>.mmd</code>, <code>.mermaid</code>) with native inline graphics (Kitty, iTerm2, Sixel), responsive ANSI tables, Chroma syntax highlighting, and clickable OSC 8 links directly in your command line.
         </p>
 
         <!-- Quick Install Box -->
@@ -220,17 +221,17 @@
             </div>
           </div>
 
-          <!-- Card 2: Native Mermaid Diagrams -->
+          <!-- Card 2: Native Mermaid Diagrams & .mmd File Viewer -->
           <div class="bento-card bento-col-6">
             <div>
               <div class="card-icon">🧜‍♀️</div>
-              <h3>Native Mermaid Diagrams</h3>
+              <h3>Native Mermaid Diagrams &amp; <code>.mmd</code> Files</h3>
               <p>
-                Renders flowcharts, sequence diagrams, and state machines graphically via Kitty, iTerm2, and Sixel protocols. Features Catmull-Rom 2x HiDPI resampling, automated background contrast cards (fixing dark/light terminal blend), and graceful cascading fallback to Unicode box-drawing or pure 7-bit ASCII text art.
+                Open standalone <code>.mmd</code> and <code>.mermaid</code> files directly or render embedded diagram blocks inside Markdown documents. Supports Kitty, iTerm2, and Sixel graphics with Catmull-Rom 2x HiDPI rasterization, auto-contrast cards, and pure-Go Unicode/ASCII fallback via built-in <code>mmaid-go</code>.
               </p>
             </div>
             <div class="code-box">
-              <code>$ mdee --mermaid auto --mermaid-bg dark architecture.md</code>
+              <code>$ mdee architecture.mmd # or cat flow.mermaid | mdee -</code>
             </div>
           </div>
 
@@ -307,6 +308,101 @@
                   Auto-loads <code>~/.mdeerc</code> in YAML or JSON, point to custom configs with <code>-c</code>, or run <code>mdee init</code> to generate one.
                 </p>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Dedicated Mermaid Section -->
+    <section id="mermaid" class="section" style="background: var(--bg-surface-elevated);">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag">Diagrams as Code</span>
+          <h2 class="section-title">Native Mermaid &amp; <code>.mmd</code> File Display</h2>
+          <p class="section-subtitle">
+            Open standalone <code>.mmd</code> and <code>.mermaid</code> files directly or pipe them from stdin. Full multi-protocol graphics with zero configuration and zero external dependencies.
+          </p>
+        </div>
+
+        <!-- Terminal Window showing .mmd viewing -->
+        <div class="terminal-window" style="max-width: 860px; margin-bottom: 2.5rem;">
+          <div class="terminal-header">
+            <div class="terminal-controls">
+              <span class="control-dot red"></span>
+              <span class="control-dot yellow"></span>
+              <span class="control-dot green"></span>
+            </div>
+            <div class="terminal-title">mdee architecture.mmd — Terminal Graphic &amp; Unicode Render</div>
+          </div>
+          <div class="terminal-body">
+            <div style="color: var(--text-muted); margin-bottom: 0.75rem;">
+              <span style="color: #10b981;">$</span> mdee architecture.mmd
+            </div>
+            <pre style="color: #38bdf8; font-family: var(--font-mono); margin: 0; line-height: 1.4;">
+┌─────────────────────────────────┐         ┌─────────────────────────────────┐
+│     Client Request (.mmd)       ├────────►│      mdee Terminal Engine       │
+└────────────────┬────────────────┘         └────────────────┬────────────────┘
+                 │                                           │
+                 ▼                                           ▼
+┌─────────────────────────────────┐         ┌─────────────────────────────────┐
+│   Kitty / iTerm2 / Sixel Image  │         │   Pure-Go Unicode Fallback      │
+│   (2x Retina HiDPI Canvas)      │         │   (mmaid-go Engine)             │
+└─────────────────────────────────┘         └─────────────────────────────────┘</pre>
+          </div>
+        </div>
+
+        <!-- Grid of Mermaid features -->
+        <div class="mermaid-grid">
+          <div class="mermaid-card">
+            <div>
+              <div class="card-icon">📁</div>
+              <h3>Standalone <code>.mmd</code> &amp; <code>.mermaid</code> Files</h3>
+              <p>
+                Pass any <code>.mmd</code> or <code>.mermaid</code> file path directly as an argument. <code>mdee</code> automatically recognizes the extension, wraps the diagram syntax, and renders it directly in your terminal grid.
+              </p>
+            </div>
+            <div class="code-box">
+              <code>$ mdee architecture.mmd</code>
+            </div>
+          </div>
+
+          <div class="mermaid-card">
+            <div>
+              <div class="card-icon">🚰</div>
+              <h3>Pipe Streams &amp; Stdin Diagrams</h3>
+              <p>
+                Pipe raw Mermaid diagrams straight from standard input using <code>mdee -</code>. Automatic diagram keyword detection recognizes flowcharts, sequence diagrams, and git graphs without requiring file extensions.
+              </p>
+            </div>
+            <div class="code-box">
+              <code>$ cat workflow.mmd | mdee -</code>
+            </div>
+          </div>
+
+          <div class="mermaid-card">
+            <div>
+              <div class="card-icon">🖼️</div>
+              <h3>Multi-Protocol High-Resolution Graphics</h3>
+              <p>
+                Renders crisp diagram images with 2x HiDPI Catmull-Rom resampling in Kitty (<code>\033_G</code>), Ghostty, WezTerm, iTerm2 (<code>OSC 1337</code>), and Sixel terminals with automatic background contrast cards.
+              </p>
+            </div>
+            <div class="code-box">
+              <code>$ mdee -m image --mermaid-scale 2.0 flow.mmd</code>
+            </div>
+          </div>
+
+          <div class="mermaid-card">
+            <div>
+              <div class="card-icon">⚡</div>
+              <h3>Zero-Dependency Pure-Go Fallback</h3>
+              <p>
+                No Node.js, npm, or headless browser required! Built-in <code>mmaid-go</code> engine renders high-fidelity Unicode box art and 7-bit ASCII in standard terminals (Apple Terminal, Alacritty, tmux, SSH).
+              </p>
+            </div>
+            <div class="code-box">
+              <code>$ mdee -m unicode sequence.mermaid</code>
             </div>
           </div>
         </div>
@@ -453,7 +549,7 @@
             </div>
             <div class="gallery-info">
               <h4>Terminal Diagnostics (<code>mdee doctor</code>)</h4>
-              <p>Instant hardware and protocol validation report for iTerm2, TrueColor, and OSC escape codes.</p>
+              <p>Instant hardware, graphics protocol, Mermaid text engine, and config validation report with inline verification tests.</p>
             </div>
           </div>
         </div>
@@ -466,10 +562,10 @@
         <div class="section-header">
           <span class="section-tag">Diagnostics</span>
           <h2 class="section-title">Verify Your Terminal in Seconds</h2>
-          <p class="section-subtitle">Run <code>mdee doctor</code> to audit terminal capabilities, truecolor depth, and inline graphic protocols.</p>
+          <p class="section-subtitle">Run <code>mdee doctor</code> to audit terminal capabilities, truecolor depth, Mermaid engines, and inline graphics protocols.</p>
         </div>
 
-        <div class="install-bar" style="max-width: 800px; margin-bottom: 2rem;">
+        <div class="install-bar" style="max-width: 820px; margin-bottom: 2rem;">
           <div class="install-command-wrap">
             <code class="install-command">
               <span class="prompt">$</span><span id="cmd-doctor">mdee doctor</span>
@@ -484,36 +580,71 @@
           </div>
         </div>
 
-        <div class="terminal-window" style="max-width: 800px;">
+        <div class="terminal-window" style="max-width: 820px;">
           <div class="terminal-header">
             <div class="terminal-controls">
               <span class="control-dot red"></span>
               <span class="control-dot yellow"></span>
               <span class="control-dot green"></span>
             </div>
-            <div class="terminal-title">mdee doctor — Output Diagnostic Report</div>
+            <div class="terminal-title">mdee doctor — Terminal Diagnostic &amp; Protocol Verification</div>
           </div>
           <div class="terminal-body" style="font-size: 0.825rem;">
-<pre style="color: #38bdf8; font-family: var(--font-mono); margin: 0;">╭──────────────────────────────────────────────────────────────╮
+<pre style="color: #38bdf8; font-family: var(--font-mono); margin: 0; line-height: 1.35;">╭──────────────────────────────────────────────────────────────╮
 │          mdee - SRE Terminal Diagnostic &amp; Capabilities       │
 ╰──────────────────────────────────────────────────────────────╯</pre>
-<pre style="font-family: var(--font-mono); margin: 0.5rem 0 0 0;">╭──────────────────────────┬───────────────────┬─────────────────────────╮
-│ Diagnostic Check         │ Value             │ Status                  │
-├──────────────────────────┼───────────────────┼─────────────────────────┤
-│ OS / Architecture        │ darwin / arm64    │ <span style="color:#10b981; font-weight:700;">PASS</span>                    │
-│ Go Runtime Version       │ go1.26.0          │ <span style="color:#10b981; font-weight:700;">PASS</span>                    │
-│ Standard Output TTY      │ true              │ <span style="color:#10b981; font-weight:700;">ENABLED</span>                 │
-│ Terminal Dimensions      │ 120 cols x 35 rows│ <span style="color:#38bdf8;">INFO</span>                    │
-│ TERM_PROGRAM             │ iTerm.app         │ <span style="color:#38bdf8;">INFO</span>                    │
-│ TERM                     │ xterm-256color    │ <span style="color:#38bdf8;">INFO</span>                    │
-│ Terminal Emulator        │ iTerm2            │ <span style="color:#10b981; font-weight:700;">DETECTED (iterm2 graphics)</span> │
-│ Active Graphics Protocol │ iterm2            │ <span style="color:#10b981; font-weight:700;">iTerm2 Graphics (OSC 1337)</span> │
-│ Kitty Graphics (APC)     │ false             │ <span style="color:#ef4444; font-weight:700;">DISABLED</span>                │
-│ OSC 1337 (iTerm2 Graphics)│ true             │ <span style="color:#10b981; font-weight:700;">ENABLED</span>                 │
-│ DEC Sixel Graphics (DCS) │ false             │ <span style="color:#ef4444; font-weight:700;">DISABLED</span>                │
-│ OSC 8 (Terminal Links)   │ true              │ <span style="color:#10b981; font-weight:700;">ENABLED</span>                 │
-│ TrueColor (24-bit)       │ true              │ <span style="color:#10b981; font-weight:700;">ENABLED</span>                 │
-╰──────────────────────────┴───────────────────┴─────────────────────────╯</pre>
+<pre style="font-family: var(--font-mono); margin: 0.5rem 0 0 0; line-height: 1.4;">╭──────────────────────────┬─────────────────┬─────────────────────────────────╮
+│ Diagnostic Check         │ Value           │ Status                          │
+├──────────────────────────┼─────────────────┼─────────────────────────────────┤
+│ OS / Architecture        │ darwin / arm64  │ <span style="color:#10b981; font-weight:700;">PASS</span>                            │
+│ Go Runtime Version       │ go1.26.0        │ <span style="color:#10b981; font-weight:700;">PASS</span>                            │
+│ Standard Output TTY      │ true            │ <span style="color:#10b981; font-weight:700;">ENABLED</span>                         │
+│ Terminal Dimensions      │ 120 cols x 35   │ <span style="color:#38bdf8;">INFO</span>                            │
+│                          │ rows            │                                 │
+│ TERM_PROGRAM             │ iTerm.app       │ <span style="color:#38bdf8;">INFO</span>                            │
+│ TERM                     │ xterm-256color  │ <span style="color:#38bdf8;">INFO</span>                            │
+│ Terminal Emulator        │ iTerm2          │ <span style="color:#10b981; font-weight:700;">DETECTED (iterm2 graphics)</span>      │
+│ Inside tmux Session      │ false           │ <span style="color:#94a3b8;">No</span>                              │
+│ Active Graphics Protocol │ iterm2          │ <span style="color:#10b981; font-weight:700;">iTerm2 Graphics (OSC 1337)</span>      │
+│ Kitty Graphics (APC)     │ false           │ <span style="color:#ef4444; font-weight:700;">DISABLED</span>                        │
+│ OSC 1337 (iTerm2         │ true            │ <span style="color:#10b981; font-weight:700;">ENABLED</span>                         │
+│ Graphics)                │                 │                                 │
+│ DEC Sixel Graphics (DCS) │ false           │ <span style="color:#ef4444; font-weight:700;">DISABLED</span>                        │
+│ OSC 8 (Terminal Links)   │ true            │ <span style="color:#10b981; font-weight:700;">ENABLED</span>                         │
+│ TrueColor (24-bit)       │ true            │ <span style="color:#10b981; font-weight:700;">ENABLED</span>                         │
+│ Mermaid Protocol         │ iterm2          │ <span style="color:#10b981; font-weight:700;">iTerm2 Graphics (OSC 1337)</span>      │
+│ Mermaid CLI (mmdc)       │ false           │ <span style="color:#f59e0b;">Not Found (Remote / Text</span>        │
+│                          │                 │ <span style="color:#f59e0b;">fallback)</span>                       │
+│ Mermaid Text Engine      │ mmaid-go        │ <span style="color:#10b981; font-weight:700;">READY (Pure-Go)</span>                 │
+│ Config File (~/.mdeerc)  │ ~/.mdeerc       │ <span style="color:#10b981; font-weight:700;">LOADED</span>                          │
+╰──────────────────────────┴─────────────────┴─────────────────────────────────╯</pre>
+
+            <div class="doctor-verification-test">
+              <div class="doctor-test-title">── Protocol Verification Test ──────────────────────────────────</div>
+              
+              <div class="doctor-test-item">
+                <span class="doctor-bullet">•</span> <strong>OSC 8 Hyperlink:</strong> <a href="https://github.com/smford/mdee" target="_blank" rel="noopener noreferrer" class="doctor-link">Click here to test OSC 8 GitHub link</a>
+              </div>
+
+              <div class="doctor-test-item">
+                <span class="doctor-bullet">•</span> <strong>Inline Image Test</strong> (iterm2 protocol, 32x32 color gradient swatch):
+                <div style="margin: 0.75rem 0 0.35rem 1.25rem; display: flex; align-items: center; gap: 0.85rem;">
+                  <span class="doctor-swatch" aria-label="32x32 gradient swatch preview"></span>
+                  <span style="color: #10b981; font-size: 0.8rem; font-weight: 600;">✓ Inline graphics protocol working</span>
+                </div>
+                <div style="color: var(--text-muted); font-size: 0.8rem; margin-left: 1.25rem;">(If you see a square gradient above, iterm2 inline graphics are working!)</div>
+              </div>
+
+              <div class="doctor-test-item">
+                <span class="doctor-bullet">•</span> <strong>Mermaid Diagram Rendering Test</strong> (unicode mode, auto protocol):
+<pre style="color: #38bdf8; font-family: var(--font-mono); margin: 0.75rem 0 0 1.25rem; line-height: 1.35;">
+┌─────────────────────────┐    ┌───────────────────────┐
+│                         │    │                       │
+│        Terminal         ├───►│        Mermaid        │
+│                         │    │                       │
+└─────────────────────────┘    └───────────────────────┘</pre>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -526,6 +657,10 @@
           <span class="section-tag">Command-Line Interface</span>
           <h2 class="section-title">CLI Flags &amp; Configuration</h2>
           <p class="section-subtitle">Tailor width constraints, themes, borders, and image behaviors to your workflow.</p>
+        </div>
+
+        <div class="code-box" style="max-width: 820px; margin-inline: auto; margin-bottom: 2rem;">
+          <code>$ mdee [options] [file.md | file.mmd | file.mermaid | url | -]</code>
         </div>
 
         <div class="table-responsive">
@@ -591,7 +726,7 @@
                 <td><span class="code-badge">--mermaid</span></td>
                 <td><span class="code-badge">-m</span></td>
                 <td><code>"auto"</code></td>
-                <td>Mermaid render mode: <code>auto</code>, <code>image</code>, <code>ansi</code>, <code>unicode</code>, <code>ascii</code>, <code>raw</code></td>
+                <td>Mermaid render mode: <code>auto</code>, <code>image</code>, <code>ansi</code>, <code>unicode</code>, <code>ascii</code>, <code>raw</code> (supports <code>.mmd</code> &amp; <code>.mermaid</code> files)</td>
               </tr>
               <tr>
                 <td><span class="code-badge">--mermaid-theme</span></td>

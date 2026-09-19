@@ -331,3 +331,30 @@ func TestInitCmd(t *testing.T) {
 		}
 	})
 }
+
+func TestIsMermaidSource(t *testing.T) {
+	cases := []struct {
+		target   string
+		data     string
+		expected bool
+	}{
+		{"diagram.mmd", "graph TD; A-->B", true},
+		{"diagram.mermaid", "flowchart LR; A-->B", true},
+		{"chart.MMD", "sequenceDiagram\nAlice->Bob: Hi", true},
+		{"-", "graph TD\n  A --> B", true},
+		{"-", "flowchart TD\n  A --> B", true},
+		{"-", "sequenceDiagram\n  Alice->>Bob: Hello", true},
+		{"-", "%% comment\ngraph TD\n  A --> B", true},
+		{"-", "Just normal text\nwith multiple lines", false},
+		{"readme.md", "graph TD\n  A --> B", false},
+		{"readme.md", "```mermaid\ngraph TD; A-->B\n```", false},
+		{"-", "```mermaid\ngraph TD; A-->B\n```", false},
+	}
+
+	for _, tc := range cases {
+		got := isMermaidSource(tc.target, []byte(tc.data))
+		if got != tc.expected {
+			t.Errorf("isMermaidSource(%q, %q) = %v, expected %v", tc.target, tc.data, got, tc.expected)
+		}
+	}
+}
